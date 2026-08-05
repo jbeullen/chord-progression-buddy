@@ -167,6 +167,7 @@ const Sound = (() => {
      * instead of just staying silent. */
     onBlocked: (fn) => { blockedHandler = fn; },
     state: () => (ctx ? ctx.state : 'uninitialised'),
+    sampleRate: () => (ctx ? ctx.sampleRate : null),
     unlock: ensure
   };
 })();

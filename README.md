@@ -59,8 +59,12 @@ npm test
 
 ## Deploying
 
-Any static host will do. For GitHub Pages: **Settings → Pages → Deploy from a
-branch**, pick the branch and the `/` root folder.
+`.github/workflows/deploy-pages.yml` runs the tests on every push and publishes
+the default branch to GitHub Pages. It needs one setting turned on once:
+**Settings → Pages → Source → GitHub Actions**. After that every push to the
+default branch redeploys, and a failing test blocks the deploy.
+
+Any static host works too — the site is the repo root, with no build step.
 
 There is also a single-file build — the stylesheet and all three scripts
 inlined into one HTML file with no dependencies, small enough to email or drop

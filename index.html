@@ -26,7 +26,6 @@
         <button type="button" data-mode="minor">Minor</button>
       </div>
       <button type="button" class="toggle" id="seventhToggle" aria-pressed="false">7ths</button>
-      <button type="button" class="toggle" id="soundTest" title="Play a test chord and check the audio output">Test sound</button>
       <button type="button" class="toggle" id="muteToggle" aria-pressed="false" title="Silence chord playback">Mute</button>
     </div>
   </div>
@@ -77,10 +76,28 @@
   <!-- ----------------------------------------------------- progressions -->
   <section class="panel" id="progressionPanel"></section>
 
+  <!-- --------------------------------------------------------- diagnostics -->
+  <section class="panel debug-panel" id="debugPanel" hidden>
+    <div class="panel-head">
+      <h2>Diagnostics</h2>
+      <p class="sub">Here to answer one question when playback misbehaves: is this page producing
+         sound, or is the sound being lost somewhere after it?</p>
+    </div>
+    <div class="debug-controls">
+      <button type="button" class="toggle" id="soundTest">Test sound</button>
+      <button type="button" class="toggle" id="debugRefresh">Refresh readings</button>
+    </div>
+    <p class="audio-notice" id="debugResult" hidden></p>
+    <dl class="debug-facts" id="debugFacts"></dl>
+  </section>
+
   <footer class="footer">
     <p>Everything here is generated from the key you picked — the spellings, the numerals and the voice
        leading are all computed, not looked up in a table.</p>
     <p class="footer-sub">Inspired by the cardboard chord wheels musicians have used for decades.</p>
+    <p class="footer-sub">
+      <button type="button" class="link-button" id="debugToggle" aria-expanded="false">Diagnostics</button>
+    </p>
   </footer>
 </main>
 
