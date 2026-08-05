@@ -460,12 +460,22 @@
     render();
   });
 
+  /* The label names the action, not the state: a silent page should never
+   * tempt anyone into clicking the control that silences it. */
   $('#muteToggle').addEventListener('click', (e) => {
     const muted = !Sound.isMuted();
     Sound.setMuted(muted);
     e.currentTarget.setAttribute('aria-pressed', String(muted));
     e.currentTarget.classList.toggle('on', muted);
-    e.currentTarget.textContent = muted ? 'Sound off' : 'Sound on';
+    e.currentTarget.textContent = muted ? 'Unmute' : 'Mute';
+    e.currentTarget.title = muted ? 'Turn chord playback back on' : 'Silence chord playback';
+  });
+
+  /* If the browser refuses to start audio at all, say so — the usual cause is
+   * the page being embedded in a frame that is not allowed to play sound. */
+  Sound.onBlocked(() => {
+    const notice = $('#audioNotice');
+    if (notice) notice.hidden = false;
   });
 
   /* Arrow keys walk the diatonic row. */

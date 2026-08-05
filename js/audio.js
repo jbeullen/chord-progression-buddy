@@ -7,6 +7,8 @@ const Sound = (() => {
   let ctx = null;
   let master = null;
   let muted = false;
+  let blockedHandler = null;
+  let reportedBlocked = false;
 
   function ensure() {
     if (!ctx) {
@@ -21,9 +23,36 @@ const Sound = (() => {
       master.connect(comp);
       comp.connect(ctx.destination);
     }
-    // Browsers start the context suspended until a user gesture.
-    if (ctx.state === 'suspended') ctx.resume();
     return ctx;
+  }
+
+  function blocked(reason) {
+    if (reportedBlocked) return;
+    reportedBlocked = true;
+    if (blockedHandler) blockedHandler(reason);
+  }
+
+  /* Browsers hand back a suspended context until a user gesture, and resuming
+   * is asynchronous. Scheduling against `currentTime` before the context is
+   * actually running drops the notes into the past, so everything waits for
+   * the resume to land. */
+  function whenRunning(fn) {
+    const c = ensure();
+    if (!c) { blocked('unsupported'); return; }
+    if (c.state === 'running') { fn(c); return; }
+
+    let settled = false;
+    const go = () => {
+      if (settled) return;
+      settled = true;
+      if (c.state === 'running') { reportedBlocked = false; fn(c); }
+      else blocked('suspended');
+    };
+
+    const p = c.resume();
+    if (p && typeof p.then === 'function') p.then(go, () => blocked('refused'));
+    // Older Safari's resume() returns nothing, so poll briefly as well.
+    setTimeout(go, 250);
   }
 
   const midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
@@ -62,10 +91,10 @@ const Sound = (() => {
 
   /* Play one chord (array of MIDI numbers), lightly strummed. */
   function chord(midis, delay = 0, dur = 1.1) {
-    if (muted || !ensure()) return;
-    const t0 = ctx.currentTime + delay + 0.02;
-    midis.forEach((m, i) => {
-      tone(midiToFreq(m), t0 + i * 0.014, dur, 0.19 - i * 0.012);
+    if (muted) return;
+    whenRunning((c) => {
+      const t0 = c.currentTime + delay + 0.02;
+      midis.forEach((m, i) => tone(midiToFreq(m), t0 + i * 0.014, dur, 0.19 - i * 0.012));
     });
   }
 
@@ -75,8 +104,15 @@ const Sound = (() => {
     const gap = opts.gap || 0.72;
     const dur = opts.dur || gap * 1.35;
     const delays = chordList.map((_, i) => i * gap);
-    if (!muted && ensure()) {
-      chordList.forEach((midis, i) => chord(midis, delays[i], i === chordList.length - 1 ? dur * 1.6 : dur));
+    if (!muted) {
+      whenRunning((c) => {
+        const base = c.currentTime + 0.02;
+        chordList.forEach((midis, i) => {
+          const t0 = base + delays[i];
+          const d = i === chordList.length - 1 ? dur * 1.6 : dur;
+          midis.forEach((m, j) => tone(midiToFreq(m), t0 + j * 0.014, d, 0.19 - j * 0.012));
+        });
+      });
     }
     return { delays, gap };
   }
@@ -86,6 +122,10 @@ const Sound = (() => {
     sequence,
     isMuted: () => muted,
     setMuted: (v) => { muted = v; },
+    /* Called once if the browser refuses to start audio, so the UI can say so
+     * instead of just staying silent. */
+    onBlocked: (fn) => { blockedHandler = fn; },
+    state: () => (ctx ? ctx.state : 'uninitialised'),
     unlock: ensure
   };
 })();
