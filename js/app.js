@@ -497,6 +497,15 @@
     singles = [];
     seqs = [];
     clearHighlights();
+
+    /* Song mode is major-only for now, so a minor key entering it is moved to
+     * its parallel major — same tonic, and the key picker stays truthful about
+     * what is on screen. */
+    if (state.view === 'song' && state.mode === 'minor') {
+      state.mode = 'major';
+      state.tonic = resolveTonic(state.tonic, 'major');
+    }
+
     key = T.buildKey(T.parseNote(state.tonic), state.mode);
     if (state.deg > 6 || state.deg < 0) state.deg = 0;
 
@@ -505,6 +514,7 @@
     const song = state.view === 'song';
     $('#songView').hidden = !song;
     $('#theoryView').hidden = song;
+    $('#modeToggle').hidden = song;
     document.querySelectorAll('#viewToggle button').forEach((b) => {
       b.classList.toggle('on', b.dataset.view === state.view);
     });

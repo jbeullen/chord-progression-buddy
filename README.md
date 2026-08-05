@@ -28,6 +28,9 @@ scale order. Above each chord is the dominant seventh that pulls into it, with
 an arrow pointing at its target. Below are the borrowed chords: ♭III under I,
 ♭VI under IV, iv under ii, ♭VII under V and ii° under vii.
 
+Song mode is major-only while it is being finished, so the Major/Minor switch
+is hidden there and a minor key entering song mode moves to its parallel major.
+
 Click any chord to append it to the progression underneath, then play, loop,
 or clear it. A progression is stored as grid positions rather than as chords,
 so **changing key transposes it** — build `I vi IV V` in C, switch to G, and it
