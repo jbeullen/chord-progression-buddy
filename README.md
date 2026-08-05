@@ -11,9 +11,15 @@ to D♯ minor (D♯ E♯ F♯ G♯ A♯ B C♯ — not E♭ F G♭…).
 ## What it shows
 
 **The diatonic chords** — the main event. Seven cards, each with its Roman
-numeral, its Nashville number, the actual chord, the seventh chord, the scale
-degree name, and a colour for its harmonic function (tonic / pre-dominant /
-dominant).
+numeral, its number, the actual chord, the seventh chord, the scale degree
+name, and a colour for its harmonic function (tonic / pre-dominant / dominant).
+
+Numbers use the quality-suffix shorthand: `1` major, `2-` minor, `5D` dominant,
+`7-♭5` half-diminished. So a major key reads `1 2- 3- 4 5D 6- 7-♭5` and a minor
+key reads `1- 2-♭5 3 4- 5- 6 7D`. The suffix comes from the seventh rather than
+the triad, because a dominant and a major chord are the same three notes and
+only the seventh separates them — which is why the V of a major key is `5D`
+while a `Gmaj7` in the same key would be plain `5`.
 
 **Secondary dominants** — for every chord in the key: its own V7, the ii that
 sets that V7 up, the tritone substitute, and the leading-tone diminished

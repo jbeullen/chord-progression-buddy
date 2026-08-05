@@ -114,7 +114,7 @@
       return `<div class="chord-card fn-${c.fn}${sel}" role="button" tabindex="0"
                    data-deg="${c.degree}" data-play="${single(c)}"
                    aria-label="${c.symbol}, ${c.roman}">
-        <div class="card-top"><span class="num">${state.sevenths ? c.nashville7 : c.nashville}</span></div>
+        <div class="card-top"><span class="num">${c.number}</span></div>
         <div class="roman">${roman(c)}</div>
         <div class="sym">${label(c)}</div>
         <div class="sym-alt">${state.sevenths ? c.symbol : c.symbol7}</div>
@@ -172,7 +172,7 @@
       <div class="panel-head">
         <h2>${chord.symbol} <span class="thin">— the ${chord.roman} chord</span></h2>
         <p class="sub">
-          <span class="pill">${state.sevenths ? chord.nashville7 : chord.nashville}</span>
+          <span class="pill">${chord.number}</span>
           <span class="pill fn-pill fn-${chord.fn}">${chord.fnLabel}</span>
           ${chord.degreeName} · ${notesOf(chord)}
         </p>

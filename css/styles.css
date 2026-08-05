@@ -333,6 +333,25 @@ main { display: flex; flex-direction: column; gap: 20px; padding-top: 22px; }
 .legend .dot:not(:first-child) { margin-left: 10px; }
 .legend .hint { margin-left: auto; font-style: italic; }
 
+.number-key {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+.number-key b {
+  font-size: 12.5px;
+  letter-spacing: 0;
+  color: var(--accent);
+  text-transform: none;
+  margin-right: 3px;
+}
+
 /* ============================================================ chips ==== */
 .chip {
   font: inherit;

@@ -180,23 +180,37 @@ const Theory = (() => {
     return prefix + numeral;
   }
 
-  /* Nashville charts hang the seventh off the number as a superscript, so that
-   * the dominant of 5 reads "5⁷" and never "57". */
-  const NASHVILLE_SEVENTH = {
-    maj7: '△', dom7: '⁷', min7: 'm⁷', minMaj7: 'm△',
-    halfDim7: 'ø⁷', dim7: '°⁷', augMaj7: '+△', aug7: '+⁷'
+  /* The number system: the degree number carries a suffix naming the chord
+   * family — 1 major, 2- minor, 5D dominant, 7-♭5 half-diminished.
+   *
+   * The family is a property of the seventh, not the triad: a major triad and
+   * a dominant are the same three notes, and only the seventh tells them
+   * apart. So the suffix is chosen from the seventh quality wherever the chord
+   * has one, and falls back to the triad when it does not. */
+  const NUMBER_SUFFIX = {
+    maj7: '',
+    dom7: 'D',
+    min7: '-',
+    halfDim7: '-' + FLAT + '5',
+    dim7: '°',
+    minMaj7: '-maj7',
+    augMaj7: '+',
+    aug7: '+D'
   };
 
-  /* The Nashville number-system name: 1, 2m, 3m, 4, 5, 6m, 7dim. */
-  function nashvilleFor(chord, refScale, opts = {}) {
+  /* Without a seventh a major triad is just major — nothing marks it as a
+   * dominant, so it is not labelled as one. */
+  const NUMBER_SUFFIX_TRIAD = { maj: '', min: '-', dim: '-' + FLAT + '5', aug: '+' };
+
+  function numberFor(chord, refScale) {
     const tonicLetter = refScale[0].letter;
     const deg = (((chord.root.letter - tonicLetter) % 7) + 7) % 7;
     let diff = mod12(pc(chord.root) - pc(refScale[deg]));
     if (diff > 6) diff -= 12;
     const prefix = diff < 0 ? FLAT.repeat(-diff) : diff > 0 ? SHARP.repeat(diff) : '';
-    const suffix = opts.seventh && chord.seventhQuality
-      ? NASHVILLE_SEVENTH[chord.seventhQuality]
-      : TRIADS[chord.quality].suffix;
+    const suffix = chord.seventhQuality
+      ? NUMBER_SUFFIX[chord.seventhQuality]
+      : NUMBER_SUFFIX_TRIAD[chord.quality];
     return prefix + (deg + 1) + suffix;
   }
 
@@ -232,8 +246,7 @@ const Theory = (() => {
       chord.degree = deg;
       chord.roman = romanFor(chord, scaleNotes);
       chord.roman7 = romanFor(chord, scaleNotes, { seventh: true });
-      chord.nashville = nashvilleFor(chord, scaleNotes);
-      chord.nashville7 = nashvilleFor(chord, scaleNotes, { seventh: true });
+      chord.number = numberFor(chord, scaleNotes);
       chord.degreeName = degreeName(scaleNotes, deg);
       chord.fn = FUNCTION_BY_DEGREE[mode][deg];
       chord.fnLabel = FUNCTION_LABEL[chord.fn];
@@ -251,7 +264,7 @@ const Theory = (() => {
       chord.degree = deg;
       chord.roman = romanFor(chord, relativeScale);
       chord.roman7 = romanFor(chord, relativeScale, { seventh: true });
-      chord.nashville = nashvilleFor(chord, relativeScale);
+      chord.number = numberFor(chord, relativeScale);
       chord.degreeName = degreeName(relativeScale, deg);
       chord.fn = FUNCTION_BY_DEGREE[relativeMode][deg];
       chord.fnLabel = FUNCTION_LABEL[chord.fn];
@@ -365,7 +378,7 @@ const Theory = (() => {
       if (pc(chord.root) === pc(home.root) && chord.quality === home.quality) return;
       chord.roman = romanFor(chord, key.scaleNotes);
       chord.roman7 = romanFor(chord, key.scaleNotes, { seventh: true });
-      chord.nashville = nashvilleFor(chord, key.scaleNotes);
+      chord.number = numberFor(chord, key.scaleNotes);
       chord.note = BORROW_NOTES[key.mode][deg];
       chord.source = 'Parallel ' + key.parallel.mode;
       chord.replaces = home;
@@ -376,7 +389,7 @@ const Theory = (() => {
     // in any list of borrowed colour.
     const neapolitan = chordOn(minorSecondAbove(key.tonic), 'maj', 'maj7');
     neapolitan.roman = FLAT + 'II';
-    neapolitan.nashville = FLAT + '2';
+    neapolitan.number = FLAT + '2';
     neapolitan.note = 'Neapolitan. A major chord on the flat 2nd — dramatic pre-dominant, goes to V.';
     neapolitan.source = 'Chromatic';
     out.push(neapolitan);
@@ -703,7 +716,7 @@ const Theory = (() => {
   return {
     SHARP, FLAT, MAJOR_KEYS, MINOR_KEYS, ENHARMONICS,
     nt, noteName, parseNote, pc, step, scale, buildKey, chordOn, chordFromScale,
-    romanFor, nashvilleFor, secondaryDominants, secondaryFor, borrowedChords,
+    romanFor, numberFor, secondaryDominants, secondaryFor, borrowedChords,
     relativePivots, relativeRoutes, chordContext, progressions, voice, midiOf,
     stripSeventh, keySignature
   };

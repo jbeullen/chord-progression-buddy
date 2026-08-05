@@ -40,8 +40,7 @@ is(symbols(C.diatonic), 'C Dm Em F G Am Bdim', 'C major triads');
 is(C.diatonic.map((c) => c.symbol7).join(' '), 'Cmaj7 Dm7 Em7 Fmaj7 G7 Am7 Bm7♭5', 'C major sevenths');
 is(romans(C.diatonic), 'I ii iii IV V vi vii°', 'C major numerals');
 is(C.diatonic.map((c) => c.roman7).join(' '), 'Imaj7 ii7 iii7 IVmaj7 V7 vi7 viiø7', 'C major seventh numerals');
-is(C.diatonic.map((c) => c.nashville).join(' '), '1 2m 3m 4 5 6m 7dim', 'C major Nashville numbers');
-is(C.diatonic.map((c) => c.nashville7).join(' '), '1△ 2m⁷ 3m⁷ 4△ 5⁷ 6m⁷ 7ø⁷', 'Nashville sevenths stay unambiguous');
+is(C.diatonic.map((c) => c.number).join(' '), '1 2- 3- 4 5D 6- 7-♭5', 'C major numbers');
 is(C.diatonic.map((c) => c.fn).join(' '), 'tonic predominant tonic predominant dominant tonic dominant', 'C major functions');
 is(C.diatonic[6].degreeName, 'Leading tone', 'degree 7 of a major key leads');
 is(C.relative.name, 'A minor', 'relative of C major');
@@ -51,6 +50,15 @@ is(symbols(T.buildKey(T.parseNote('Eb'), 'major').diatonic), 'E♭ Fm Gm A♭ B�
 const Am = T.buildKey(T.parseNote('A'), 'minor');
 is(symbols(Am.diatonic), 'Am Bdim C Dm Em F G', 'A minor triads');
 is(romans(Am.diatonic), 'i ii° III iv v VI VII', 'A minor numerals');
+is(Am.diatonic.map((c) => c.number).join(' '), '1- 2-♭5 3 4- 5- 6 7D', 'A minor numbers — the VII is a dominant');
+is(T.buildKey(T.parseNote('Eb'), 'major').diatonic.map((c) => c.number).join(' '), '1 2- 3- 4 5D 6- 7-♭5', 'numbers are key-independent');
+is(T.borrowedChords(C).map((c) => c.number).join(' '), '1- 2-♭5 ♭3 4- 5- ♭6 ♭7D ♭2', 'borrowed chords keep their accidental prefix');
+// A dominant is a major triad with a minor seventh, which a triad alone cannot show.
+is(T.numberFor(T.chordOn(T.parseNote('G'), 'maj', 'dom7'), C.scaleNotes), '5D', 'G7 in C is 5D');
+is(T.numberFor(T.chordOn(T.parseNote('G'), 'maj', 'maj7'), C.scaleNotes), '5', 'Gmaj7 in C is plain 5');
+is(T.numberFor(T.chordOn(T.parseNote('G'), 'maj'), C.scaleNotes), '5', 'a bare G triad claims nothing about a seventh');
+is(T.numberFor(T.chordOn(T.parseNote('A'), 'maj', 'dom7'), C.scaleNotes), '6D', 'the secondary dominant A7 is 6D');
+is(T.numberFor(T.chordOn(T.parseNote('B'), 'dim', 'dim7'), C.scaleNotes), '7°', 'a fully diminished seventh is not the same as 7-♭5');
 is(Am.diatonic[6].degreeName, 'Subtonic', 'degree 7 of a natural minor key does not lead');
 is(Am.relative.name, 'C major', 'relative of A minor');
 is(symbols(T.buildKey(T.parseNote('F#'), 'minor').diatonic), 'F♯m G♯dim A Bm C♯m D E', 'F♯ minor triads');
