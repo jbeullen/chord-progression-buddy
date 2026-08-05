@@ -123,8 +123,8 @@ const grid = T.songLayout(C);
 is(grid.length, 7, 'the song grid has seven columns');
 is(grid.map((c) => c.main.symbol).join(' '), 'C Am F Dm G Em Bdim', 'main row is I vi IV ii V iii vii');
 is(grid.map((c) => c.main.roman).join(' '), 'I vi IV ii V iii vii°', 'main row numerals');
-is(grid.map((c) => c.secondary.display).join(' '), 'G7 E7 C7 A7 D7 B7 F♯7', 'every column gets the dominant a fifth above');
-is(grid.map((c) => c.secondary.roman).join(' '), 'V7 V7/vi V7/IV V7/ii V7/V V7/iii V7/vii°', 'secondary numerals; over the tonic it is just V7');
+is(grid.map((c) => (c.secondary ? c.secondary.display : '—')).join(' '), 'G7 E7 C7 A7 D7 B7 —', 'each column gets the dominant a fifth above, except the diminished one');
+is(grid.map((c) => (c.secondary ? c.secondary.roman : '—')).join(' '), 'V7 V7/vi V7/IV V7/ii V7/V V7/iii —', 'secondary numerals; over the tonic it is just V7');
 is(grid.map((c) => (c.interchange ? c.interchange.display : '—')).join(' '),
   'E♭maj7 — A♭maj7 Fm7 B♭7 — Ddim', 'modal interchange row sits under the right columns');
 is(grid.map((c) => (c.interchange ? c.interchange.roman : '—')).join(' '),
@@ -137,7 +137,8 @@ is(grid[0].interchange.notes.length, 4, 'the ♭III slot plays four');
 const G = T.buildKey(T.parseNote('G'), 'major');
 const gGrid = T.songLayout(G);
 is(gGrid.map((c) => c.main.symbol).join(' '), 'G Em C Am D Bm F♯dim', 'main row in G');
-is(gGrid.map((c) => c.secondary.display).join(' '), 'D7 B7 G7 E7 A7 F♯7 C♯7', 'secondary row in G');
+is(gGrid.map((c) => (c.secondary ? c.secondary.display : '—')).join(' '), 'D7 B7 G7 E7 A7 F♯7 —', 'secondary row in G');
+is(T.songChordAt(G, { row: 'secondary', pos: 6 }), null, 'the diminished column has no dominant');
 is(gGrid.map((c) => (c.interchange ? c.interchange.display : '—')).join(' '),
   'B♭maj7 — E♭maj7 Cm7 F7 — Adim', 'interchange row in G');
 is(T.songChordAt(G, { row: 'main', pos: 4 }).symbol, 'D', 'a saved slot resolves against the current key');
@@ -147,6 +148,9 @@ is(T.songChordAt(G, { row: 'interchange', pos: 1 }), null, 'an empty slot resolv
 // Minor keys reuse the same positional layout against the parallel major.
 const Cm = T.buildKey(T.parseNote('C'), 'minor');
 is(T.songLayout(Cm).map((c) => c.main.symbol).join(' '), 'Cm A♭ Fm Ddim Gm E♭ B♭', 'main row in C minor');
+// The diminished chord sits in a different column here, and the gap follows it.
+is(T.songLayout(Cm).map((c) => (c.secondary ? c.secondary.display : '—')).join(' '),
+  'G7 E♭7 C7 — D7 B♭7 F7', 'the gap tracks the diminished chord, not a fixed position');
 
 // -------------------------------------------------------------- voicings ---
 is(T.voice(C.diatonic[0]).join(' '), '48 52 55 59 60', 'Cmaj7 voices upwards from the root');

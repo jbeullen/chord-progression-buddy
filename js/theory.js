@@ -700,12 +700,17 @@ const Theory = (() => {
     return SONG_ORDER.map((degree, pos) => {
       const main = key.diatonic[degree];
 
-      // Every column gets the dominant seventh a fifth above it. Over the
-      // tonic that is simply V7 rather than a secondary dominant.
-      const secondary = chordOn(fifthAbove(main.root), 'maj', 'dom7');
-      secondary.display = secondary.symbol7;
-      secondary.roman = degree === 0 ? 'V7' : 'V7/' + stripSeventh(main.roman);
-      secondary.number = numberFor(secondary, key.scaleNotes);
+      // Each column gets the dominant seventh a fifth above it — over the tonic
+      // that is simply V7 rather than a secondary dominant. The diminished
+      // chord gets none: it is not a key you can tonicize, so its column stays
+      // empty rather than offering a dominant that resolves nowhere.
+      let secondary = null;
+      if (main.quality !== 'dim') {
+        secondary = chordOn(fifthAbove(main.root), 'maj', 'dom7');
+        secondary.display = secondary.symbol7;
+        secondary.roman = degree === 0 ? 'V7' : 'V7/' + stripSeventh(main.roman);
+        secondary.number = numberFor(secondary, key.scaleNotes);
+      }
 
       let interchange = null;
       const spec = SONG_INTERCHANGE[pos];
