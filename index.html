@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chord Progression Buddy</title>
+<meta name="description" content="Pick a key and see its diatonic chords in both the number system and real chord names, plus secondary dominants, modal interchange and the route to the relative key.">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127929;</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">♭♯</span>
+      <span class="brand-text">
+        <strong>Chord Progression Buddy</strong>
+        <em>diatonic map · secondary dominants · modal interchange</em>
+      </span>
+    </div>
+
+    <div class="controls">
+      <div class="seg" id="modeToggle" role="group" aria-label="Key quality">
+        <button type="button" data-mode="major" class="on">Major</button>
+        <button type="button" data-mode="minor">Minor</button>
+      </div>
+      <button type="button" class="toggle" id="seventhToggle" aria-pressed="false">7ths</button>
+      <button type="button" class="toggle" id="muteToggle" aria-pressed="false" title="Mute playback">Sound on</button>
+    </div>
+  </div>
+
+  <nav class="keybar" aria-label="Key">
+    <div class="keybar-inner">
+      <span class="keybar-label">Key</span>
+      <div class="key-chips" id="keyChips"></div>
+      <button type="button" class="enharm" id="enharmSwap" hidden></button>
+      <span class="key-sig" id="keySig"></span>
+    </div>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ---------------------------------------------------------- diatonic -->
+  <section class="panel hero" id="diatonicPanel">
+    <div class="panel-head">
+      <h1 id="keyTitle">The chords in C major</h1>
+      <p class="scale-line" id="scaleLine"></p>
+    </div>
+    <div class="chord-row" id="chordRow"></div>
+    <p class="legend">
+      <span class="dot fn-tonic"></span> Tonic — home
+      <span class="dot fn-predominant"></span> Pre-dominant — sets up the cadence
+      <span class="dot fn-dominant"></span> Dominant — wants to resolve
+      <span class="hint">Click a chord to explore it · click any chord name to hear it</span>
+    </p>
+  </section>
+
+  <div class="split">
+    <!-- ---------------------------------------------------------- detail -->
+    <section class="panel" id="detailPanel"></section>
+
+    <!-- -------------------------------------------------------- relative -->
+    <section class="panel" id="relativePanel"></section>
+  </div>
+
+  <!-- ------------------------------------------------ secondary dominants -->
+  <section class="panel" id="secondaryPanel"></section>
+
+  <!-- ------------------------------------------------- modal interchange -->
+  <section class="panel" id="borrowedPanel"></section>
+
+  <!-- ----------------------------------------------------- progressions -->
+  <section class="panel" id="progressionPanel"></section>
+
+  <footer class="footer">
+    <p>Everything here is generated from the key you picked — the spellings, the numerals and the voice
+       leading are all computed, not looked up in a table.</p>
+    <p class="footer-sub">Inspired by the cardboard chord wheels musicians have used for decades.</p>
+  </footer>
+</main>
+
+<script src="js/theory.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
