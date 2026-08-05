@@ -390,9 +390,9 @@
         </div>
       </div>`;
 
-    /* The arrows live between the two boxes, in a band built like the others so
-     * they line up with the columns they point at. */
-    const arrowBand = `
+    /* The arrows live between the boxes, in a band built like the others so
+     * they line up with the columns they join. */
+    const arrowBand = (has, glyph, cls) => `
       <div class="song-band">
         <div class="song-lead"></div>
         <div class="song-col">
@@ -400,24 +400,34 @@
             <div class="song-box-inner">
               <div class="song-hint"></div>
               <div class="song-row">${grid.map((col) =>
-                `<div class="song-cell">${col.secondary ? '<span class="song-arrow" aria-hidden="true">↓</span>' : ''}</div>`
+                `<div class="song-cell">${has(col)
+                  ? `<span class="song-arrow ${cls}" aria-hidden="true">${glyph}</span>` : ''}</div>`
               ).join('')}</div>
             </div>
           </div>
         </div>
       </div>`;
 
+    const mixHint = `<span class="hint-label do-mix">${LOOP_ICON}<span>Mix chords</span></span>`;
+
     $('#songGrid').innerHTML =
       band('secondary', {
         hint: `<span class="hint-label no-mix">${NO_LOOP_ICON}<span>Don’t mix</span></span>`
       }) +
-      arrowBand +
+      arrowBand((col) => col.secondary, '↓', 'down') +
       band('main', {
         lead: '<span class="lead-note">Start here<span class="lead-arrow" aria-hidden="true">→</span></span>',
         legend: '<span class="box-legend"><span aria-hidden="true">↑</span> Up to any chord</span>',
-        hint: `<span class="hint-label do-mix">${LOOP_ICON}<span>Mix chords</span></span>`
+        hint: mixHint
       }) +
-      band('interchange');
+      arrowBand((col) => col.interchange, '↕', 'both') +
+      band('interchange', {
+        legend: '<span class="box-legend on-interchange">' +
+          '<span aria-hidden="true">↓</span> down: to any chord ' +
+          '<span class="legend-sep">·</span> ' +
+          '<span aria-hidden="true">↑</span> up: follow the arrows</span>',
+        hint: mixHint
+      });
   }
 
   function renderProgression() {
