@@ -180,13 +180,20 @@ main {
 .key-sig { margin-left: auto; font-size: 12px; color: var(--muted); }
 
 .audio-notice {
-  background: color-mix(in srgb, var(--dom) 12%, var(--panel));
-  border: 1px solid color-mix(in srgb, var(--dom) 45%, transparent);
+  --notice: var(--dom);
+  background: color-mix(in srgb, var(--notice) 12%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--notice) 45%, transparent);
   border-radius: 10px;
   padding: 11px 14px;
   font-size: 13px;
+  line-height: 1.5;
   color: var(--ink);
 }
+.audio-notice.ok { --notice: var(--tonic); }
+.audio-notice.warn { --notice: var(--accent); }
+.audio-notice.bad { --notice: var(--dom); }
+
+.toggle[disabled] { opacity: .6; cursor: default; }
 
 /* =========================================================== panels ==== */
 main { display: flex; flex-direction: column; gap: 20px; padding-top: 22px; }

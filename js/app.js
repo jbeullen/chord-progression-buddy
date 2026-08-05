@@ -471,11 +471,47 @@
     e.currentTarget.title = muted ? 'Turn chord playback back on' : 'Silence chord playback';
   });
 
+  function notify(kind, html) {
+    const notice = $('#audioNotice');
+    notice.className = 'audio-notice ' + kind;
+    notice.innerHTML = html;
+    notice.hidden = false;
+  }
+
   /* If the browser refuses to start audio at all, say so — the usual cause is
    * the page being embedded in a frame that is not allowed to play sound. */
   Sound.onBlocked(() => {
-    const notice = $('#audioNotice');
-    if (notice) notice.hidden = false;
+    notify('bad', 'This browser will not start audio on this page. If you are viewing it embedded in ' +
+      'another page, open it in its own tab and the chords will play.');
+  });
+
+  /* Plays a test chord and measures the output, which separates "the page made
+   * no sound" from "the page made sound you cannot hear". */
+  $('#soundTest').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    if (Sound.isMuted()) {
+      notify('warn', 'Playback is muted. Click <b>Unmute</b> and test again.');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Listening…';
+    const r = await Sound.test();
+    btn.disabled = false;
+    btn.textContent = 'Test sound';
+
+    if (r.producing) {
+      notify('ok', `Audio is working — the page produced sound at ${Math.round(r.peak * 100)}% of full scale ` +
+        `(audio context: ${r.state}). If you still hear nothing, the sound is being lost after this page: ` +
+        `check your system volume, the tab's mute state, and whether this page is embedded in another one — ` +
+        `an embedded frame is often not allowed to play audio, and opening it in its own tab fixes that.`);
+    } else {
+      notify('bad', `No audio came out of the page (audio context: ${r.state}). ` +
+        (r.state === 'suspended'
+          ? 'The browser is refusing to start audio here, which usually means this page is embedded in a frame that is not permitted to play sound. Open it in its own tab.'
+          : r.state === 'unsupported'
+            ? 'This browser does not support the Web Audio API.'
+            : 'Try reloading the page, then click a chord before testing again.'));
+    }
   });
 
   /* Arrow keys walk the diatonic row. */

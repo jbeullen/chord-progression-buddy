@@ -6,6 +6,7 @@
 const Sound = (() => {
   let ctx = null;
   let master = null;
+  let analyser = null;
   let muted = false;
   let blockedHandler = null;
   let reportedBlocked = false;
@@ -20,10 +21,48 @@ const Sound = (() => {
       const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -18;
       comp.ratio.value = 6;
+      // The analyser sits in the chain so the page can measure whether sound is
+      // actually being produced, rather than failing silently.
+      analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
       master.connect(comp);
-      comp.connect(ctx.destination);
+      comp.connect(analyser);
+      analyser.connect(ctx.destination);
     }
     return ctx;
+  }
+
+  /* Watch the output for a moment and report the loudest sample seen. */
+  function probe(duration = 700) {
+    return new Promise((resolve) => {
+      const c = ensure();
+      if (!c || !analyser) return resolve({ producing: false, peak: 0, state: 'unsupported' });
+      const buf = new Float32Array(analyser.fftSize);
+      let peak = 0;
+      const started = Date.now();
+      const timer = setInterval(() => {
+        analyser.getFloatTimeDomainData(buf);
+        for (let i = 0; i < buf.length; i++) {
+          const a = Math.abs(buf[i]);
+          if (a > peak) peak = a;
+        }
+        if (Date.now() - started >= duration) {
+          clearInterval(timer);
+          resolve({ producing: peak > 0.0005, peak, state: c.state });
+        }
+      }, 30);
+    });
+  }
+
+  /* Play an unmistakable arpeggio and measure what came out of it. */
+  function test() {
+    const c = ensure();
+    if (!c) return Promise.resolve({ producing: false, peak: 0, state: 'unsupported' });
+    whenRunning((run) => {
+      const t0 = run.currentTime + 0.02;
+      [60, 64, 67, 72].forEach((m, i) => tone(midiToFreq(m), t0 + i * 0.12, 0.9, 0.22));
+    });
+    return probe(900);
   }
 
   function blocked(reason) {
@@ -120,6 +159,8 @@ const Sound = (() => {
   return {
     chord,
     sequence,
+    test,
+    probe,
     isMuted: () => muted,
     setMuted: (v) => { muted = v; },
     /* Called once if the browser refuses to start audio, so the UI can say so

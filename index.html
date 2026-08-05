@@ -26,6 +26,7 @@
         <button type="button" data-mode="minor">Minor</button>
       </div>
       <button type="button" class="toggle" id="seventhToggle" aria-pressed="false">7ths</button>
+      <button type="button" class="toggle" id="soundTest" title="Play a test chord and check the audio output">Test sound</button>
       <button type="button" class="toggle" id="muteToggle" aria-pressed="false" title="Silence chord playback">Mute</button>
     </div>
   </div>
@@ -42,10 +43,7 @@
 
 <main>
 
-  <p class="audio-notice" id="audioNotice" hidden>
-    This browser is blocking audio on this page. If you are viewing it embedded in another page,
-    open it in its own tab and the chords will play.
-  </p>
+  <p class="audio-notice" id="audioNotice" hidden></p>
 
   <!-- ---------------------------------------------------------- diatonic -->
   <section class="panel hero" id="diatonicPanel">
