@@ -62,6 +62,14 @@ npm test
 Any static host will do. For GitHub Pages: **Settings → Pages → Deploy from a
 branch**, pick the branch and the `/` root folder.
 
+There is also a single-file build — the stylesheet and all three scripts
+inlined into one HTML file with no dependencies, small enough to email or drop
+anywhere:
+
+```sh
+npm run build    # → dist/chord-progression-buddy.html
+```
+
 ## How it works
 
 - `js/theory.js` — the engine. Notes are `{ letter, acc }` pairs rather than

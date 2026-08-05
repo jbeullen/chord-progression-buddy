@@ -380,7 +380,9 @@
 
   function writeHash() {
     const h = `key=${encodeURIComponent(state.tonic)}&mode=${state.mode}&deg=${state.deg}${state.sevenths ? '&7=1' : ''}`;
-    if (location.hash.slice(1) !== h) history.replaceState(null, '', '#' + h);
+    if (location.hash.slice(1) === h) return;
+    // Sandboxed iframes forbid history writes; the app works fine without them.
+    try { history.replaceState(null, '', '#' + h); } catch (e) { /* no shareable URL here */ }
   }
 
   function readHash() {
