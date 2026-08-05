@@ -678,6 +678,58 @@ const Theory = (() => {
     }));
   }
 
+  // ----------------------------------------------------------- song mode ---
+
+  /* The songwriting grid puts the diatonic chords in reach-order rather than
+   * scale-order: tonic first, then the chords you actually reach for next. */
+  const SONG_ORDER = [0, 5, 3, 1, 4, 2, 6]; // I vi IV ii V iii vii
+
+  /* Which chord from the parallel mode sits under each column of the grid,
+   * keyed by position in SONG_ORDER rather than by scale degree. In a major
+   * key that reads ♭III under I, ♭VI under IV, iv under ii, ♭VII under V and
+   * ii° under vii, with nothing under vi or iii. */
+  const SONG_INTERCHANGE = {
+    0: { deg: 2, seventh: true },  // ♭III under I
+    2: { deg: 5, seventh: true },  // ♭VI  under IV
+    3: { deg: 3, seventh: true },  // iv   under ii
+    4: { deg: 6, seventh: true },  // ♭VII under V
+    6: { deg: 1, seventh: false }  // ii°  under vii
+  };
+
+  function songLayout(key) {
+    return SONG_ORDER.map((degree, pos) => {
+      const main = key.diatonic[degree];
+
+      // Every column gets the dominant seventh a fifth above it. Over the
+      // tonic that is simply V7 rather than a secondary dominant.
+      const secondary = chordOn(fifthAbove(main.root), 'maj', 'dom7');
+      secondary.display = secondary.symbol7;
+      secondary.roman = degree === 0 ? 'V7' : 'V7/' + stripSeventh(main.roman);
+      secondary.number = numberFor(secondary, key.scaleNotes);
+
+      let interchange = null;
+      const spec = SONG_INTERCHANGE[pos];
+      if (spec) {
+        interchange = chordFromScale(key.parallel.scaleNotes, spec.deg);
+        interchange.roman = romanFor(interchange, key.scaleNotes, { seventh: spec.seventh });
+        interchange.number = numberFor(interchange, key.scaleNotes);
+        interchange.display = spec.seventh ? interchange.symbol7 : interchange.symbol;
+        // A slot shown as a triad should sound like one too.
+        if (!spec.seventh) interchange.notes = interchange.triadNotes;
+      }
+
+      return { pos, degree, main, secondary, interchange };
+    });
+  }
+
+  /* Resolve a saved progression slot back to a chord in the current key, which
+   * is what lets a progression transpose when the key changes. */
+  function songChordAt(key, slot) {
+    const col = songLayout(key)[slot.pos];
+    if (!col) return null;
+    return col[slot.row] || null;
+  }
+
   // ------------------------------------------------------------- voicing ---
 
   /* Turn a chord into MIDI notes in a comfortable register for playback. */
@@ -718,6 +770,6 @@ const Theory = (() => {
     nt, noteName, parseNote, pc, step, scale, buildKey, chordOn, chordFromScale,
     romanFor, numberFor, secondaryDominants, secondaryFor, borrowedChords,
     relativePivots, relativeRoutes, chordContext, progressions, voice, midiOf,
-    stripSeventh, keySignature
+    stripSeventh, keySignature, songLayout, songChordAt, SONG_ORDER
   };
 })();

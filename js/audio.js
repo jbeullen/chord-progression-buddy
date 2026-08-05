@@ -96,6 +96,9 @@ const Sound = (() => {
 
   const midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
+  /* Voices currently scheduled or sounding, so playback can be cut short. */
+  let live = [];
+
   function tone(freq, t0, dur, gain) {
     const osc = ctx.createOscillator();
     const shimmer = ctx.createOscillator();
@@ -126,7 +129,47 @@ const Sound = (() => {
     shimmer.start(t0);
     osc.stop(t0 + dur + 0.06);
     shimmer.stop(t0 + dur + 0.06);
+
+    const voice = { osc, shimmer, g };
+    live.push(voice);
+    osc.onended = () => {
+      const i = live.indexOf(voice);
+      if (i > -1) live.splice(i, 1);
+    };
   }
+
+  /* Cut every sounding and scheduled note, with a short fade so stopping does
+   * not click. */
+  function silence() {
+    if (!ctx) return;
+    const t = ctx.currentTime;
+    live.forEach(({ osc, shimmer, g }) => {
+      try {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0.0001, t + 0.04);
+        osc.stop(t + 0.05);
+        shimmer.stop(t + 0.05);
+      } catch (e) {
+        // Already stopped — nothing to cut.
+      }
+    });
+    live = [];
+  }
+
+  /* Schedule a chord at an absolute context time. The sequencer works this way
+   * so its timing comes from the audio clock rather than from setTimeout. */
+  function chordAt(midis, when, dur = 1.1) {
+    if (muted) return;
+    const c = ensure();
+    if (!c || c.state !== 'running') return;
+    midis.forEach((m, i) => tone(midiToFreq(m), when + i * 0.014, dur, 0.19 - i * 0.012));
+  }
+
+  const now = () => {
+    const c = ensure();
+    return c ? c.currentTime : 0;
+  };
 
   /* Play one chord (array of MIDI numbers), lightly strummed. */
   function chord(midis, delay = 0, dur = 1.1) {
@@ -158,7 +201,10 @@ const Sound = (() => {
 
   return {
     chord,
+    chordAt,
     sequence,
+    silence,
+    now,
     test,
     probe,
     isMuted: () => muted,

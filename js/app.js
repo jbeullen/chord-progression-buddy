@@ -6,10 +6,15 @@
   const T = Theory;
 
   const state = {
+    view: 'theory',
     tonic: 'C',
     mode: 'major',
     deg: 0,
-    sevenths: false
+    sevenths: false,
+    /* Progression slots, not chords: {row, pos} resolved against the current
+     * key, so changing key transposes what you have built. */
+    prog: [],
+    loop: false
   };
 
   let key = null;
@@ -332,6 +337,135 @@
       <div class="prog-grid">${cards}</div>`;
   }
 
+  // ------------------------------------------------------------ song mode ---
+
+  const ROW_LABELS = {
+    secondary: 'Secondary dominants',
+    main: 'Main chords',
+    interchange: 'Modal interchange'
+  };
+
+  function renderSong() {
+    $('#songTitle').textContent = 'Build a progression in ' + key.name;
+    const grid = T.songLayout(key);
+
+    const cell = (col, row) => {
+      const chord = col[row];
+      if (!chord) return `<div class="song-cell empty" aria-hidden="true"></div>`;
+      const sub = row === 'main' ? chord.number : chord.roman;
+      return `<div class="song-cell">
+        <button type="button" class="song-chord ${row}" data-add-row="${row}" data-add-pos="${col.pos}"
+                title="Add ${chord.display || label(chord)} to the progression">
+          <span class="song-sym">${row === 'main' ? label(chord) : chord.display}</span>
+          <span class="song-sub">${sub}</span>
+        </button>
+        ${row === 'secondary' ? '<span class="song-arrow" aria-hidden="true">↓</span>' : ''}
+      </div>`;
+    };
+
+    const rowHTML = (row) => `
+      <div class="song-row-label">${ROW_LABELS[row]}</div>
+      <div class="song-row song-row-${row}">${grid.map((col) => cell(col, row)).join('')}</div>`;
+
+    $('#songGrid').innerHTML = rowHTML('secondary') + rowHTML('main') + rowHTML('interchange');
+  }
+
+  function renderProgression() {
+    const strip = $('#progStrip');
+    if (!state.prog.length) {
+      strip.innerHTML = `<p class="prog-empty">No chords yet — click any chord above to start building.</p>`;
+    } else {
+      strip.innerHTML = state.prog.map((slot, i) => {
+        const chord = T.songChordAt(key, slot);
+        if (!chord) return '';
+        return `<div class="prog-slot" data-slot="${i}">
+          <span class="prog-index">${i + 1}</span>
+          <span class="prog-name">${slot.row === 'main' ? label(chord) : chord.display}</span>
+          <span class="prog-roman">${chord.roman}</span>
+          <button type="button" class="prog-remove" data-remove="${i}" aria-label="Remove ${chord.symbol}">×</button>
+        </div>`;
+      }).join('');
+    }
+
+    const empty = state.prog.length === 0;
+    $('#progPlay').disabled = empty;
+    $('#progClear').disabled = empty;
+    $('#progStop').disabled = !player.playing;
+    $('#progLoop').classList.toggle('on', state.loop);
+    $('#progLoop').setAttribute('aria-pressed', String(state.loop));
+    $('#progPlay').classList.toggle('on', player.playing);
+    $('#progPlay').textContent = player.playing ? '▶ Playing' : '▶ Play';
+  }
+
+  // ------------------------------------------------------------ sequencer ---
+
+  /* Timing comes from the audio clock: a short interval looks ahead and
+   * schedules whatever falls inside the next fraction of a second. */
+  const STEP = 1.35;      // seconds per chord
+  const LOOKAHEAD = 0.25; // how far ahead to schedule
+  const player = { timer: null, step: 0, nextTime: 0, playing: false, marks: [] };
+
+  function clearMarks() {
+    player.marks.forEach(clearTimeout);
+    player.marks = [];
+    document.querySelectorAll('.prog-slot.playing').forEach((e) => e.classList.remove('playing'));
+  }
+
+  function markAt(index, when) {
+    const delay = Math.max(0, (when - Sound.now()) * 1000);
+    player.marks.push(setTimeout(() => {
+      document.querySelectorAll('.prog-slot.playing').forEach((e) => e.classList.remove('playing'));
+      const el = document.querySelector(`.prog-slot[data-slot="${index}"]`);
+      if (el) el.classList.add('playing');
+    }, delay));
+  }
+
+  function tick() {
+    while (player.playing && player.nextTime < Sound.now() + LOOKAHEAD) {
+      if (player.step >= state.prog.length) {
+        if (!state.loop) {
+          // Let the last chord ring, then stop.
+          const end = player.nextTime;
+          player.playing = false;
+          clearInterval(player.timer);
+          player.timer = null;
+          player.marks.push(setTimeout(() => { stopPlayback(); }, Math.max(0, (end - Sound.now()) * 1000)));
+          renderProgression();
+          return;
+        }
+        player.step = 0;
+      }
+      const chord = T.songChordAt(key, state.prog[player.step]);
+      if (chord) {
+        Sound.chordAt(T.voice(chord), player.nextTime, STEP * 0.92);
+        markAt(player.step, player.nextTime);
+      }
+      player.nextTime += STEP;
+      player.step += 1;
+    }
+  }
+
+  function startPlayback() {
+    if (!state.prog.length) return;
+    Sound.unlock();
+    stopPlayback();
+    player.playing = true;
+    player.step = 0;
+    player.nextTime = Sound.now() + 0.12;
+    player.timer = setInterval(tick, 25);
+    tick();
+    renderProgression();
+  }
+
+  function stopPlayback() {
+    if (player.timer) clearInterval(player.timer);
+    player.timer = null;
+    player.playing = false;
+    clearMarks();
+    Sound.silence();
+    renderProgression();
+  }
+
   // ------------------------------------------------------------- playback ---
 
   let seqTimers = [];
@@ -367,19 +501,49 @@
     if (state.deg > 6 || state.deg < 0) state.deg = 0;
 
     renderKeyChips();
-    renderDiatonic();
-    renderDetail();
-    renderRelative();
-    renderSecondary();
-    renderBorrowed();
-    renderProgressions();
+
+    const song = state.view === 'song';
+    $('#songView').hidden = !song;
+    $('#theoryView').hidden = song;
+    document.querySelectorAll('#viewToggle button').forEach((b) => {
+      b.classList.toggle('on', b.dataset.view === state.view);
+    });
+
+    if (song) {
+      renderSong();
+      renderProgression();
+    } else {
+      renderDiatonic();
+      renderDetail();
+      renderRelative();
+      renderSecondary();
+      renderBorrowed();
+      renderProgressions();
+    }
     writeHash();
   }
 
   // ----------------------------------------------------------------- hash ---
 
+  /* Progressions travel in the URL too, so a worked-out sequence is a link. */
+  const ROW_CODE = { main: 'm', secondary: 's', interchange: 'i' };
+  const CODE_ROW = { m: 'main', s: 'secondary', i: 'interchange' };
+
+  const encodeProg = () => state.prog.map((s) => ROW_CODE[s.row] + s.pos).join('-');
+
+  function decodeProg(str) {
+    if (!str) return [];
+    return str.split('-').map((tok) => ({
+      row: CODE_ROW[tok[0]],
+      pos: parseInt(tok.slice(1), 10)
+    })).filter((s) => s.row && s.pos >= 0 && s.pos <= 6);
+  }
+
   function writeHash() {
-    const h = `key=${encodeURIComponent(state.tonic)}&mode=${state.mode}&deg=${state.deg}${state.sevenths ? '&7=1' : ''}`;
+    let h = `key=${encodeURIComponent(state.tonic)}&mode=${state.mode}&deg=${state.deg}${state.sevenths ? '&7=1' : ''}`;
+    if (state.view === 'song') h += '&view=song';
+    if (state.prog.length) h += '&p=' + encodeProg();
+    if (state.loop) h += '&loop=1';
     if (location.hash.slice(1) === h) return;
     // Sandboxed iframes forbid history writes; the app works fine without them.
     try { history.replaceState(null, '', '#' + h); } catch (e) { /* no shareable URL here */ }
@@ -394,6 +558,9 @@
     const d = parseInt(h.get('deg'), 10);
     if (!isNaN(d) && d >= 0 && d <= 6) state.deg = d;
     state.sevenths = h.get('7') === '1';
+    state.view = h.get('view') === 'song' ? 'song' : 'theory';
+    state.prog = decodeProg(h.get('p'));
+    state.loop = h.get('loop') === '1';
   }
 
   // ------------------------------------------------------------- events ---
@@ -443,6 +610,58 @@
       e.preventDefault();
       onActivate(e.target);
     }
+  });
+
+  $('#viewToggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-view]');
+    if (!btn || btn.dataset.view === state.view) return;
+    stopPlayback();
+    state.view = btn.dataset.view;
+    render();
+  });
+
+  /* Adding and removing chords, and the transport. */
+  document.addEventListener('click', (e) => {
+    const add = e.target.closest('[data-add-row]');
+    if (add) {
+      const slot = { row: add.dataset.addRow, pos: parseInt(add.dataset.addPos, 10) };
+      state.prog.push(slot);
+      const chord = T.songChordAt(key, slot);
+      if (chord) {
+        Sound.unlock();
+        Sound.chord(T.voice(chord));
+      }
+      add.classList.add('added');
+      setTimeout(() => add.classList.remove('added'), 240);
+      renderProgression();
+      writeHash();
+      return;
+    }
+
+    const remove = e.target.closest('[data-remove]');
+    if (remove) {
+      const wasPlaying = player.playing;
+      state.prog.splice(parseInt(remove.dataset.remove, 10), 1);
+      if (wasPlaying) stopPlayback();
+      renderProgression();
+      writeHash();
+    }
+  });
+
+  $('#progPlay').addEventListener('click', startPlayback);
+  $('#progStop').addEventListener('click', stopPlayback);
+
+  $('#progClear').addEventListener('click', () => {
+    stopPlayback();
+    state.prog = [];
+    renderProgression();
+    writeHash();
+  });
+
+  $('#progLoop').addEventListener('click', () => {
+    state.loop = !state.loop;
+    renderProgression();
+    writeHash();
   });
 
   $('#modeToggle').addEventListener('click', (e) => {
@@ -549,6 +768,7 @@
   /* Arrow keys walk the diatonic row. */
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, textarea')) return;
+    if (state.view !== 'theory') return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       const delta = e.key === 'ArrowRight' ? 1 : -1;
       state.deg = (state.deg + delta + 7) % 7;

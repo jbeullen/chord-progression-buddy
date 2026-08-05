@@ -118,6 +118,36 @@ is(displays(prm[3]), 'Am G F E', 'Andalusian cadence');
 is(displays(prm[6]), 'Am Dm E7 A', 'Picardy third ending');
 is(displays(prm[7]), 'Am B♭ E7 Am', 'Neapolitan cadence');
 
+// ------------------------------------------------------------- song mode ---
+const grid = T.songLayout(C);
+is(grid.length, 7, 'the song grid has seven columns');
+is(grid.map((c) => c.main.symbol).join(' '), 'C Am F Dm G Em Bdim', 'main row is I vi IV ii V iii vii');
+is(grid.map((c) => c.main.roman).join(' '), 'I vi IV ii V iii vii°', 'main row numerals');
+is(grid.map((c) => c.secondary.display).join(' '), 'G7 E7 C7 A7 D7 B7 F♯7', 'every column gets the dominant a fifth above');
+is(grid.map((c) => c.secondary.roman).join(' '), 'V7 V7/vi V7/IV V7/ii V7/V V7/iii V7/vii°', 'secondary numerals; over the tonic it is just V7');
+is(grid.map((c) => (c.interchange ? c.interchange.display : '—')).join(' '),
+  'E♭maj7 — A♭maj7 Fm7 B♭7 — Ddim', 'modal interchange row sits under the right columns');
+is(grid.map((c) => (c.interchange ? c.interchange.roman : '—')).join(' '),
+  '♭IIImaj7 — ♭VImaj7 iv7 ♭VII7 — ii°', 'modal interchange numerals');
+// The triad slot must sound like a triad, not carry a silent seventh.
+is(grid[6].interchange.notes.length, 3, 'the ii° slot plays three notes');
+is(grid[0].interchange.notes.length, 4, 'the ♭III slot plays four');
+
+// Transposing: the same grid slot follows the key.
+const G = T.buildKey(T.parseNote('G'), 'major');
+const gGrid = T.songLayout(G);
+is(gGrid.map((c) => c.main.symbol).join(' '), 'G Em C Am D Bm F♯dim', 'main row in G');
+is(gGrid.map((c) => c.secondary.display).join(' '), 'D7 B7 G7 E7 A7 F♯7 C♯7', 'secondary row in G');
+is(gGrid.map((c) => (c.interchange ? c.interchange.display : '—')).join(' '),
+  'B♭maj7 — E♭maj7 Cm7 F7 — Adim', 'interchange row in G');
+is(T.songChordAt(G, { row: 'main', pos: 4 }).symbol, 'D', 'a saved slot resolves against the current key');
+is(T.songChordAt(G, { row: 'secondary', pos: 0 }).display, 'D7', 'saved secondary slot resolves');
+is(T.songChordAt(G, { row: 'interchange', pos: 1 }), null, 'an empty slot resolves to nothing');
+
+// Minor keys reuse the same positional layout against the parallel major.
+const Cm = T.buildKey(T.parseNote('C'), 'minor');
+is(T.songLayout(Cm).map((c) => c.main.symbol).join(' '), 'Cm A♭ Fm Ddim Gm E♭ B♭', 'main row in C minor');
+
 // -------------------------------------------------------------- voicings ---
 is(T.voice(C.diatonic[0]).join(' '), '48 52 55 59 60', 'Cmaj7 voices upwards from the root');
 is(T.voice(C.diatonic[6]).join(' '), '59 62 65 69 71', 'Bm7♭5 voices upwards from the root');

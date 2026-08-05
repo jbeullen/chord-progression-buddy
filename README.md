@@ -8,7 +8,33 @@ Everything on the page is **computed from the key you picked**. There are no
 lookup tables of chords per key, so the spellings stay correct all the way out
 to D♯ minor (D♯ E♯ F♯ G♯ A♯ B C♯ — not E♭ F G♭…).
 
-## What it shows
+## Two modes
+
+**Theory** lays the key out to be read and understood. **Song** lays it out to be
+played from.
+
+## Song mode
+
+Three rows in vertical register, seven columns:
+
+|            | | | | | | | |
+|------------|---|---|---|---|---|---|---|
+| Secondary dominants | G7 | E7 | C7 | A7 | D7 | B7 | F♯7 |
+| **Main chords** | **C** | **Am** | **F** | **Dm** | **G** | **Em** | **Bdim** |
+| Modal interchange | E♭maj7 | | A♭maj7 | Fm7 | B♭7 | | Ddim |
+
+The main row is the key in reach-order — `I vi IV ii V iii vii` — rather than
+scale order. Above each chord is the dominant seventh that pulls into it, with
+an arrow pointing at its target. Below are the borrowed chords: ♭III under I,
+♭VI under IV, iv under ii, ♭VII under V and ii° under vii.
+
+Click any chord to append it to the progression underneath, then play, loop,
+or clear it. A progression is stored as grid positions rather than as chords,
+so **changing key transposes it** — build `I vi IV V` in C, switch to G, and it
+follows you. The progression rides in the URL too, so a worked-out sequence is
+a link you can send someone.
+
+## What Theory mode shows
 
 **The diatonic chords** — the main event. Seven cards, each with its Roman
 numeral, its number, the actual chord, the seventh chord, the scale degree

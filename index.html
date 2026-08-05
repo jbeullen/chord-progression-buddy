@@ -21,6 +21,10 @@
     </div>
 
     <div class="controls">
+      <div class="seg seg-view" id="viewToggle" role="group" aria-label="Mode">
+        <button type="button" data-view="theory" class="on">Theory</button>
+        <button type="button" data-view="song">Song</button>
+      </div>
       <div class="seg" id="modeToggle" role="group" aria-label="Key quality">
         <button type="button" data-mode="major" class="on">Major</button>
         <button type="button" data-mode="minor">Minor</button>
@@ -44,7 +48,34 @@
 
   <p class="audio-notice" id="audioNotice" hidden></p>
 
+  <!-- --------------------------------------------------------- song mode -->
+  <div id="songView" hidden>
+    <section class="panel">
+      <div class="panel-head">
+        <h1 id="songTitle">Build a progression in C major</h1>
+        <p class="sub">Click any chord to add it to the progression. The middle row is the key itself;
+           reach up for a dominant that pulls into the chord below it, or down for a borrowed chord
+           that recolours it.</p>
+      </div>
+      <div class="song-grid" id="songGrid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head song-head">
+        <h2>Progression</h2>
+        <div class="transport">
+          <button type="button" class="transport-btn play" id="progPlay">▶ Play</button>
+          <button type="button" class="transport-btn" id="progStop">■ Stop</button>
+          <button type="button" class="transport-btn" id="progLoop" aria-pressed="false">⟳ Loop</button>
+          <button type="button" class="transport-btn" id="progClear">Clear</button>
+        </div>
+      </div>
+      <div class="prog-strip" id="progStrip"></div>
+    </section>
+  </div>
+
   <!-- ---------------------------------------------------------- diatonic -->
+  <div id="theoryView">
   <section class="panel hero" id="diatonicPanel">
     <div class="panel-head">
       <h1 id="keyTitle">The chords in C major</h1>
@@ -78,6 +109,7 @@
 
   <!-- ----------------------------------------------------- progressions -->
   <section class="panel" id="progressionPanel"></section>
+  </div><!-- /theoryView -->
 
   <!-- --------------------------------------------------------- diagnostics -->
   <section class="panel debug-panel" id="debugPanel" hidden>
