@@ -345,6 +345,13 @@
     interchange: 'Modal interchange'
   };
 
+  /* Drawn rather than typed, so they render the same everywhere. */
+  const LOOP_ICON =
+    '<svg class="hint-ico" viewBox="0 0 24 24" aria-hidden="true">' +
+    '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>' +
+    '<path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+  const NO_LOOP_ICON = LOOP_ICON.replace('</svg>', '<path class="slash" d="M2 2l20 20"/></svg>');
+
   function renderSong() {
     $('#songTitle').textContent = 'Build a progression in ' + key.name;
     const grid = T.songLayout(key);
@@ -359,15 +366,55 @@
           <span class="song-sym">${row === 'main' ? label(chord) : chord.display}</span>
           <span class="song-sub">${sub}</span>
         </button>
-        ${row === 'secondary' ? '<span class="song-arrow" aria-hidden="true">↓</span>' : ''}
       </div>`;
     };
 
-    const rowHTML = (row) => `
-      <div class="song-row-label">${ROW_LABELS[row]}</div>
-      <div class="song-row song-row-${row}">${grid.map((col) => cell(col, row)).join('')}</div>`;
+    /* Every band shares the same gutters — the lead column and the hint column —
+     * so the three rows stay in vertical register and a dominant always sits
+     * directly above the chord it resolves to. */
+    const band = (row, opts = {}) => `
+      <div class="song-band">
+        <div class="song-lead">${opts.lead || ''}</div>
+        <div class="song-col">
+          <div class="song-row-label">${ROW_LABELS[row]}</div>
+          <div class="song-box box-${row}">
+            ${opts.legend || ''}
+            <div class="song-box-inner">
+              <div class="song-hint">${opts.hint || ''}</div>
+              <div class="song-row song-row-${row}">${grid.map((col) => cell(col, row)).join('')}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
 
-    $('#songGrid').innerHTML = rowHTML('secondary') + rowHTML('main') + rowHTML('interchange');
+    /* The arrows live between the two boxes, in a band built like the others so
+     * they line up with the columns they point at. */
+    const arrowBand = `
+      <div class="song-band">
+        <div class="song-lead"></div>
+        <div class="song-col">
+          <div class="song-box ghost">
+            <div class="song-box-inner">
+              <div class="song-hint"></div>
+              <div class="song-row">${grid.map((col) =>
+                `<div class="song-cell">${col.secondary ? '<span class="song-arrow" aria-hidden="true">↓</span>' : ''}</div>`
+              ).join('')}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    $('#songGrid').innerHTML =
+      band('secondary', {
+        hint: `<span class="hint-label no-mix">${NO_LOOP_ICON}<span>Don’t mix</span></span>`
+      }) +
+      arrowBand +
+      band('main', {
+        lead: '<span class="lead-note">Start here<span class="lead-arrow" aria-hidden="true">→</span></span>',
+        legend: '<span class="box-legend"><span aria-hidden="true">↑</span> Up to any chord</span>',
+        hint: `<span class="hint-label do-mix">${LOOP_ICON}<span>Mix chords</span></span>`
+      }) +
+      band('interchange');
   }
 
   function renderProgression() {

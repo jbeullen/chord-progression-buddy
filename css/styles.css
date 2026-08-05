@@ -19,6 +19,10 @@
 
 * { box-sizing: border-box; }
 
+/* A class that sets `display` outranks the browser's [hidden] rule, which
+ * silently leaves "hidden" elements on screen. Settle it once, globally. */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; }
 
 body {
@@ -86,7 +90,7 @@ main {
 .brand-text strong { font-size: 16px; }
 .brand-text em { font-size: 11.5px; color: var(--muted); letter-spacing: .02em; }
 
-.controls { display: flex; align-items: center; gap: 8px; }
+.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 
 .seg {
   display: flex;
@@ -200,8 +204,35 @@ main {
 
 /* The three rows must stay in vertical register — a dominant has to sit above
  * the chord it resolves to. So the grid never reflows to fewer columns; on a
- * narrow screen it scrolls sideways as one piece instead. */
-.song-grid { display: flex; flex-direction: column; gap: 4px; overflow-x: auto; }
+ * narrow screen it scrolls sideways as one piece instead. Every band repeats
+ * the same two gutters, empty where unused, which is what holds the columns in
+ * line across rows. */
+.song-grid { display: flex; flex-direction: column; overflow-x: auto; padding-top: 4px; }
+
+.song-band { display: flex; align-items: stretch; }
+/* The top padding centres the lead on the box rather than on the band, which
+ * also carries the row label above it. */
+.song-lead {
+  flex: none;
+  width: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 30px 10px 0 0;
+}
+.song-col { flex: 1; min-width: 0; }
+
+.lead-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tonic);
+  text-align: right;
+  line-height: 1.2;
+}
+.lead-arrow { font-size: 17px; line-height: 1; }
 
 .song-row-label {
   font-size: 10.5px;
@@ -209,12 +240,53 @@ main {
   letter-spacing: .13em;
   color: var(--muted);
   font-weight: 700;
-  margin-top: 12px;
-  margin-bottom: 5px;
+  margin: 16px 0 13px; /* room for a legend sitting on the box border below */
 }
-.song-row-label:first-child { margin-top: 0; }
 
-.song-row { display: grid; grid-template-columns: repeat(7, minmax(74px, 1fr)); gap: 8px; }
+.song-box {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 11px 12px;
+  background: rgba(255, 255, 255, .012);
+}
+.song-box.ghost { border-color: transparent; background: none; padding-top: 2px; padding-bottom: 6px; }
+.box-secondary { border-color: color-mix(in srgb, var(--dom) 34%, transparent); }
+.box-main { border-color: color-mix(in srgb, var(--tonic) 40%, transparent); }
+.box-interchange { border-color: color-mix(in srgb, var(--pre) 30%, transparent); }
+
+/* Sits on the border line, cutting it the way a fieldset legend does. */
+.box-legend {
+  position: absolute;
+  top: -8px;
+  left: 14px;
+  padding: 0 7px;
+  background: var(--panel);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--tonic);
+  white-space: nowrap;
+}
+
+.song-box-inner { display: flex; align-items: center; gap: 12px; }
+.song-hint { flex: none; width: 92px; }
+
+.hint-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+.hint-label.do-mix { color: var(--tonic); }
+.hint-label.no-mix { color: var(--dom); }
+.hint-ico { width: 17px; height: 17px; flex: none; }
+.hint-ico path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.hint-ico .slash { stroke-width: 2.4; }
+
+.song-row { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(7, minmax(74px, 1fr)); gap: 8px; }
 
 .song-cell { display: flex; flex-direction: column; align-items: stretch; }
 .song-cell.empty { min-height: 10px; }
@@ -258,12 +330,12 @@ main {
 .song-chord.interchange { background: color-mix(in srgb, var(--pre) 9%, var(--panel-2)); }
 
 .song-arrow {
+  display: block;
   text-align: center;
   font-size: 22px;
   line-height: 1;
   color: var(--dom);
   opacity: .85;
-  padding-top: 3px;
 }
 
 /* ---------------------------------------------------- progression strip -- */
