@@ -356,15 +356,18 @@
     $('#songTitle').textContent = 'Build a progression in ' + key.name;
     const grid = T.songLayout(key);
 
+    /* Each button carries all three notations, as in theory mode: the numeral,
+     * the chord itself, and the number. */
     const cell = (col, row) => {
       const chord = col[row];
       if (!chord) return `<div class="song-cell empty" aria-hidden="true"></div>`;
-      const sub = row === 'main' ? chord.number : chord.roman;
+      const name = row === 'main' ? label(chord) : chord.display;
       return `<div class="song-cell">
         <button type="button" class="song-chord ${row}" data-add-row="${row}" data-add-pos="${col.pos}"
-                title="Add ${chord.display || label(chord)} to the progression">
-          <span class="song-sym">${row === 'main' ? label(chord) : chord.display}</span>
-          <span class="song-sub">${sub}</span>
+                title="Add ${name} to the progression">
+          <span class="song-roman">${chord.roman}</span>
+          <span class="song-sym">${name}</span>
+          <span class="song-num">${chord.number}</span>
         </button>
       </div>`;
     };
