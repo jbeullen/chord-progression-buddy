@@ -420,7 +420,7 @@
         legend: '<span class="box-legend"><span aria-hidden="true">↑</span> Up to any chord</span>',
         hint: mixHint
       }) +
-      arrowBand((col) => col.interchange, '↕', 'both') +
+      arrowBand((col) => col.interchange, '<span>↑</span><span>↓</span>', 'both') +
       band('interchange', {
         legend: '<span class="box-legend on-interchange">' +
           '<span aria-hidden="true">↓</span> down: to any chord ' +

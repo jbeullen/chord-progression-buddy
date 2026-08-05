@@ -357,7 +357,9 @@ main {
   opacity: .85;
 }
 .song-arrow.down { color: var(--dom); }
-.song-arrow.both { color: var(--pre); }
+/* Two arrows rather than one double-headed glyph: the pair reads as "either
+ * direction" at a glance, where ↕ reads as a single ornament. */
+.song-arrow.both { color: var(--pre); display: flex; justify-content: center; gap: 7px; }
 
 /* ---------------------------------------------------- progression strip -- */
 .song-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
