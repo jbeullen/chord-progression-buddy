@@ -39,6 +39,21 @@
   /* Chords whose identity *is* the seventh (dominants, half-diminished) carry a
    * `display` hint from the theory layer and ignore the 7ths toggle. */
   const label = (chord) => chord.display || (state.sevenths && chord.symbol7 ? chord.symbol7 : chord.symbol);
+
+  /* Song mode names chords by what they are, so the 7ths toggle only offers the
+   * seventh where it is genuinely optional colour — on major and minor chords.
+   * A dominant is defined by its ♭7 and always shows it; a diminished chord is
+   * defined by its ♭5, which the triad name already carries. */
+  const ALWAYS_SEVENTH = { dom7: true, aug7: true };
+  const ALWAYS_TRIAD = { halfDim7: true, dim7: true };
+
+  function songLabel(chord) {
+    if (chord.display) return chord.display;
+    if (ALWAYS_SEVENTH[chord.seventhQuality]) return chord.symbol7;
+    if (ALWAYS_TRIAD[chord.seventhQuality]) return chord.symbol;
+    return state.sevenths && chord.symbol7 ? chord.symbol7 : chord.symbol;
+  }
+
   const roman = (chord) => (state.sevenths && chord.roman7 ? chord.roman7 : chord.roman);
 
   /* A clickable chord name. */
@@ -361,7 +376,7 @@
     const cell = (col, row) => {
       const chord = col[row];
       if (!chord) return `<div class="song-cell empty" aria-hidden="true"></div>`;
-      const name = label(chord);
+      const name = songLabel(chord);
       return `<div class="song-cell">
         <button type="button" class="song-chord ${row}" data-add-row="${row}" data-add-pos="${col.pos}"
                 title="Add ${name} to the progression">
@@ -440,7 +455,7 @@
         if (!chord) return '';
         return `<div class="prog-slot" data-slot="${i}">
           <span class="prog-index">${i + 1}</span>
-          <span class="prog-name">${label(chord)}</span>
+          <span class="prog-name">${songLabel(chord)}</span>
           <span class="prog-roman">${chord.roman}</span>
           <button type="button" class="prog-remove" data-remove="${i}" aria-label="Remove ${chord.symbol}">×</button>
         </div>`;
