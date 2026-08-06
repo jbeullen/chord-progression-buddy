@@ -689,11 +689,11 @@ const Theory = (() => {
    * key that reads ♭III under I, ♭VI under IV, iv under ii, ♭VII under V and
    * ii° under vii, with nothing under vi or iii. */
   const SONG_INTERCHANGE = {
-    0: { deg: 2, seventh: true },  // ♭III under I
-    2: { deg: 5, seventh: true },  // ♭VI  under IV
-    3: { deg: 3, seventh: true },  // iv   under ii
-    4: { deg: 6, seventh: true },  // ♭VII under V
-    6: { deg: 1, seventh: false }  // ii°  under vii
+    0: 2, // ♭III under I
+    2: 5, // ♭VI  under IV
+    3: 3, // iv   under ii
+    4: 6, // ♭VII under V
+    6: 1  // ii°  under vii
   };
 
   function songLayout(key) {
@@ -707,20 +707,21 @@ const Theory = (() => {
       let secondary = null;
       if (main.quality !== 'dim') {
         secondary = chordOn(fifthAbove(main.root), 'maj', 'dom7');
+        // The chord is named as the seventh it is, but the numeral stays plain:
+        // V/ii says what the chord is for without restating its quality.
         secondary.display = secondary.symbol7;
-        secondary.roman = degree === 0 ? 'V7' : 'V7/' + stripSeventh(main.roman);
+        secondary.roman = degree === 0 ? 'V' : 'V/' + stripSeventh(main.roman);
         secondary.number = numberFor(secondary, key.scaleNotes);
       }
 
       let interchange = null;
-      const spec = SONG_INTERCHANGE[pos];
-      if (spec) {
-        interchange = chordFromScale(key.parallel.scaleNotes, spec.deg);
-        interchange.roman = romanFor(interchange, key.scaleNotes, { seventh: spec.seventh });
+      const borrowedDegree = SONG_INTERCHANGE[pos];
+      if (borrowedDegree !== undefined) {
+        interchange = chordFromScale(key.parallel.scaleNotes, borrowedDegree);
+        // Numeral without the seventh, and no display override, so the name
+        // follows the sevenths toggle exactly as the main row does.
+        interchange.roman = romanFor(interchange, key.scaleNotes);
         interchange.number = numberFor(interchange, key.scaleNotes);
-        interchange.display = spec.seventh ? interchange.symbol7 : interchange.symbol;
-        // A slot shown as a triad should sound like one too.
-        if (!spec.seventh) interchange.notes = interchange.triadNotes;
       }
 
       return { pos, degree, main, secondary, interchange };

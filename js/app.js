@@ -361,7 +361,7 @@
     const cell = (col, row) => {
       const chord = col[row];
       if (!chord) return `<div class="song-cell empty" aria-hidden="true"></div>`;
-      const name = row === 'main' ? label(chord) : chord.display;
+      const name = label(chord);
       return `<div class="song-cell">
         <button type="button" class="song-chord ${row}" data-add-row="${row}" data-add-pos="${col.pos}"
                 title="Add ${name} to the progression">
@@ -440,7 +440,7 @@
         if (!chord) return '';
         return `<div class="prog-slot" data-slot="${i}">
           <span class="prog-index">${i + 1}</span>
-          <span class="prog-name">${slot.row === 'main' ? label(chord) : chord.display}</span>
+          <span class="prog-name">${label(chord)}</span>
           <span class="prog-roman">${chord.roman}</span>
           <button type="button" class="prog-remove" data-remove="${i}" aria-label="Remove ${chord.symbol}">×</button>
         </div>`;

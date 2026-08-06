@@ -124,14 +124,16 @@ is(grid.length, 7, 'the song grid has seven columns');
 is(grid.map((c) => c.main.symbol).join(' '), 'C Am F Dm G Em Bdim', 'main row is I vi IV ii V iii vii');
 is(grid.map((c) => c.main.roman).join(' '), 'I vi IV ii V iii vii°', 'main row numerals');
 is(grid.map((c) => (c.secondary ? c.secondary.display : '—')).join(' '), 'G7 E7 C7 A7 D7 B7 —', 'each column gets the dominant a fifth above, except the diminished one');
-is(grid.map((c) => (c.secondary ? c.secondary.roman : '—')).join(' '), 'V7 V7/vi V7/IV V7/ii V7/V V7/iii —', 'secondary numerals; over the tonic it is just V7');
-is(grid.map((c) => (c.interchange ? c.interchange.display : '—')).join(' '),
-  'E♭maj7 — A♭maj7 Fm7 B♭7 — Ddim', 'modal interchange row sits under the right columns');
+is(grid.map((c) => (c.secondary ? c.secondary.roman : '—')).join(' '), 'V V/vi V/IV V/ii V/V V/iii —', 'secondary numerals carry no seventh; over the tonic it is just V');
+is(grid.map((c) => (c.interchange ? c.interchange.symbol : '—')).join(' '),
+  'E♭ — A♭ Fm B♭ — Ddim', 'modal interchange row sits under the right columns');
+is(grid.map((c) => (c.interchange ? c.interchange.symbol7 : '—')).join(' '),
+  'E♭maj7 — A♭maj7 Fm7 B♭7 — Dm7♭5', 'the same chords with their sevenths');
 is(grid.map((c) => (c.interchange ? c.interchange.roman : '—')).join(' '),
-  '♭IIImaj7 — ♭VImaj7 iv7 ♭VII7 — ii°', 'modal interchange numerals');
-// The triad slot must sound like a triad, not carry a silent seventh.
-is(grid[6].interchange.notes.length, 3, 'the ii° slot plays three notes');
-is(grid[0].interchange.notes.length, 4, 'the ♭III slot plays four');
+  '♭III — ♭VI iv ♭VII — ii°', 'modal interchange numerals carry no seventh either');
+// No display override, so the sevenths toggle governs the name in the UI.
+is(grid.filter((c) => c.interchange && c.interchange.display).length, 0, 'borrowed chords do not pin their own name');
+is(grid[0].secondary.display, 'G7', 'a dominant still names itself as a seventh');
 
 // Transposing: the same grid slot follows the key.
 const G = T.buildKey(T.parseNote('G'), 'major');
@@ -139,8 +141,8 @@ const gGrid = T.songLayout(G);
 is(gGrid.map((c) => c.main.symbol).join(' '), 'G Em C Am D Bm F♯dim', 'main row in G');
 is(gGrid.map((c) => (c.secondary ? c.secondary.display : '—')).join(' '), 'D7 B7 G7 E7 A7 F♯7 —', 'secondary row in G');
 is(T.songChordAt(G, { row: 'secondary', pos: 6 }), null, 'the diminished column has no dominant');
-is(gGrid.map((c) => (c.interchange ? c.interchange.display : '—')).join(' '),
-  'B♭maj7 — E♭maj7 Cm7 F7 — Adim', 'interchange row in G');
+is(gGrid.map((c) => (c.interchange ? c.interchange.symbol : '—')).join(' '),
+  'B♭ — E♭ Cm F — Adim', 'interchange row in G');
 is(T.songChordAt(G, { row: 'main', pos: 4 }).symbol, 'D', 'a saved slot resolves against the current key');
 is(T.songChordAt(G, { row: 'secondary', pos: 0 }).display, 'D7', 'saved secondary slot resolves');
 is(T.songChordAt(G, { row: 'interchange', pos: 1 }), null, 'an empty slot resolves to nothing');
