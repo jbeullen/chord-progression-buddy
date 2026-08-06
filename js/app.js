@@ -782,6 +782,9 @@
     const facts = [
       ['Audio context', Sound.state()],
       ['Sample rate', Sound.sampleRate() ? Sound.sampleRate() + ' Hz' : '—'],
+      ['Output route', Sound.route() === 'media-element'
+        ? 'media element — ignores the iOS silent switch'
+        : Sound.route()],
       ['Playback', Sound.isMuted() ? 'muted' : 'on'],
       ['Embedded in a frame', window.self !== window.top ? 'yes — audio may be blocked here' : 'no'],
       ['Key', key.name + ' · ' + key.diatonic[state.deg].symbol + ' selected'],

@@ -11,6 +11,54 @@ const Sound = (() => {
   let blockedHandler = null;
   let reportedBlocked = false;
 
+  /* iOS puts bare Web Audio in the "ambient" audio session, which the ring/
+   * silent switch mutes — but only through the built-in speaker, so it keeps
+   * working on headphones and looks like a broken app. Audio coming out of an
+   * <audio> element counts as media playback instead, and ignores the switch.
+   * So on iOS the graph ends in a MediaStream played by an element rather than
+   * in ctx.destination. */
+  const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (/Mac/.test(navigator.userAgent) && 'ontouchend' in document);
+
+  let sinkEl = null;
+  let streamDest = null;
+  let route = 'none';
+
+  function connectDirect() {
+    if (route === 'direct' || !analyser) return;
+    if (streamDest) {
+      try { analyser.disconnect(streamDest); } catch (e) { /* never connected */ }
+    }
+    analyser.connect(ctx.destination);
+    route = 'direct';
+  }
+
+  /* Send the output through a hidden <audio> element. Anything that goes wrong
+   * falls back to the ordinary destination, so the worst case is the behaviour
+   * we had before. */
+  function connectViaMediaElement() {
+    try {
+      streamDest = ctx.createMediaStreamDestination();
+      analyser.connect(streamDest);
+
+      sinkEl = document.createElement('audio');
+      sinkEl.setAttribute('playsinline', '');
+      sinkEl.playsInline = true;
+      sinkEl.autoplay = true;
+      sinkEl.hidden = true;
+      sinkEl.srcObject = streamDest.stream;
+      document.body.appendChild(sinkEl);
+      route = 'media-element';
+
+      const played = sinkEl.play();
+      if (played && typeof played.catch === 'function') played.catch(connectDirect);
+      // If it never actually starts, take the ordinary route instead.
+      setTimeout(() => { if (sinkEl && sinkEl.paused) connectDirect(); }, 500);
+    } catch (e) {
+      connectDirect();
+    }
+  }
+
   function ensure() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -27,7 +75,9 @@ const Sound = (() => {
       analyser.fftSize = 2048;
       master.connect(comp);
       comp.connect(analyser);
-      analyser.connect(ctx.destination);
+
+      if (IS_IOS) connectViaMediaElement();
+      else connectDirect();
     }
     return ctx;
   }
@@ -214,6 +264,7 @@ const Sound = (() => {
     onBlocked: (fn) => { blockedHandler = fn; },
     state: () => (ctx ? ctx.state : 'uninitialised'),
     sampleRate: () => (ctx ? ctx.sampleRate : null),
+    route: () => route,
     unlock: ensure
   };
 })();
