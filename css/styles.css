@@ -490,11 +490,19 @@ main {
 }
 .prog-slot.playing .prog-name,
 .prog-slot.playing .prog-roman,
-.prog-slot.playing .prog-index { color: #241704; }
+.prog-slot.playing .prog-num { color: #241704; }
+.prog-slot.playing .prog-num { background: rgba(0, 0, 0, .12); }
 
-.prog-index { font-size: 9.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.prog-name { font-size: 15px; font-weight: 700; }
-.prog-roman { font-family: Georgia, serif; font-size: 11px; color: var(--muted); }
+.prog-roman { font-family: Georgia, serif; font-size: 11.5px; color: var(--muted); line-height: 1.1; }
+.prog-name { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.prog-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .05);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
 
 .prog-remove {
   position: absolute;

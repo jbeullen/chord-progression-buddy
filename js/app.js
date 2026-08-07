@@ -459,10 +459,13 @@
       strip.innerHTML = state.prog.map((slot, i) => {
         const chord = T.songChordAt(key, slot);
         if (!chord) return '';
+        /* Same three notations, in the same order, as the grid button this
+         * chord came from. A running 1, 2, 3… count sat where the number
+         * notation belongs and read as one. */
         return `<div class="prog-slot" data-slot="${i}">
-          <span class="prog-index">${i + 1}</span>
-          <span class="prog-name">${songLabel(chord)}</span>
           <span class="prog-roman">${chord.roman}</span>
+          <span class="prog-name">${songLabel(chord)}</span>
+          <span class="prog-num">${chord.number}</span>
           <button type="button" class="prog-remove" data-remove="${i}" aria-label="Remove ${chord.symbol}">×</button>
         </div>`;
       }).join('');
