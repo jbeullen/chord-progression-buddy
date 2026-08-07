@@ -486,8 +486,11 @@
   const player = { timer: null, step: 0, nextTime: 0, playing: false, marks: [] };
 
   /* Read fresh on every chord, so dragging the tempo takes effect from the
-   * next chord rather than needing playback to be restarted. */
+   * next chord rather than needing playback to be restarted. Both modes use
+   * these: a chord clicked anywhere on the page rings for one bar, and the
+   * worked examples in theory mode step at the same tempo. */
   const stepSeconds = () => (60 / state.bpm) * BEATS_PER_CHORD;
+  const chordDuration = () => stepSeconds() * 0.92;
 
   function clearMarks() {
     player.marks.forEach(clearTimeout);
@@ -565,7 +568,7 @@
     clearHighlights();
     const chords = seqs[id];
     if (!chords) return;
-    const { delays, gap } = Sound.sequence(chords);
+    const { delays, gap } = Sound.sequence(chords, { gap: stepSeconds() });
     const chips = document.querySelectorAll(`.chain-chip[data-seq="${id}"]`);
     delays.forEach((d, i) => {
       seqTimers.push(setTimeout(() => {
@@ -683,7 +686,7 @@
     if (playBtn) {
       Sound.unlock();
       clearHighlights();
-      Sound.chord(singles[parseInt(playBtn.dataset.play, 10)]);
+      Sound.chord(singles[parseInt(playBtn.dataset.play, 10)], 0, chordDuration());
       playBtn.classList.add('flash');
       setTimeout(() => playBtn.classList.remove('flash'), 260);
     }
@@ -728,7 +731,7 @@
       const chord = T.songChordAt(key, slot);
       if (chord) {
         Sound.unlock();
-        Sound.chord(T.voice(chord));
+        Sound.chord(T.voice(chord), 0, chordDuration());
       }
       add.classList.add('added');
       setTimeout(() => add.classList.remove('added'), 240);
@@ -894,7 +897,7 @@
       if (el) {
         el.focus();
         Sound.unlock();
-        Sound.chord(singles[parseInt(el.dataset.play, 10)]);
+        Sound.chord(singles[parseInt(el.dataset.play, 10)], 0, chordDuration());
       }
     }
   });

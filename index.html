@@ -40,6 +40,18 @@
       <div class="key-chips" id="keyChips"></div>
       <button type="button" class="enharm" id="enharmSwap" hidden></button>
       <span class="key-sig" id="keySig"></span>
+
+      <!-- Tempo governs every sound the page makes, so it lives here rather
+           than inside either mode. -->
+      <div class="tempo">
+        <label for="tempo">Tempo</label>
+        <button type="button" class="tempo-step" id="tempoDown" aria-label="Slower">−</button>
+        <input type="range" id="tempo" min="40" max="240" step="1" value="100"
+               aria-label="Tempo in beats per minute">
+        <button type="button" class="tempo-step" id="tempoUp" aria-label="Faster">+</button>
+        <output for="tempo" id="tempoValue">100 BPM</output>
+        <span class="tempo-hint">one chord per bar</span>
+      </div>
     </div>
   </nav>
 </header>
@@ -63,22 +75,11 @@
     <section class="panel">
       <div class="panel-head song-head">
         <h2>Progression</h2>
-        <div class="song-head-controls">
-          <div class="tempo">
-            <label for="tempo">Tempo</label>
-            <button type="button" class="tempo-step" id="tempoDown" aria-label="Slower">−</button>
-            <input type="range" id="tempo" min="40" max="240" step="1" value="100"
-                   aria-label="Tempo in beats per minute">
-            <button type="button" class="tempo-step" id="tempoUp" aria-label="Faster">+</button>
-            <output for="tempo" id="tempoValue">100 BPM</output>
-            <span class="tempo-hint">one chord per bar</span>
-          </div>
-          <div class="transport">
-            <button type="button" class="transport-btn play" id="progPlay">▶ Play</button>
-            <button type="button" class="transport-btn" id="progStop">■ Stop</button>
-            <button type="button" class="transport-btn" id="progLoop" aria-pressed="false">⟳ Loop</button>
-            <button type="button" class="transport-btn" id="progClear">Clear</button>
-          </div>
+        <div class="transport">
+          <button type="button" class="transport-btn play" id="progPlay">▶ Play</button>
+          <button type="button" class="transport-btn" id="progStop">■ Stop</button>
+          <button type="button" class="transport-btn" id="progLoop" aria-pressed="false">⟳ Loop</button>
+          <button type="button" class="transport-btn" id="progClear">Clear</button>
         </div>
       </div>
       <div class="prog-strip" id="progStrip"></div>
