@@ -15,11 +15,12 @@
      * key, so changing key transposes what you have built. */
     prog: [],
     loop: false,
-    bpm: 100
+    bpm: 120
   };
 
   const BPM_MIN = 40;
   const BPM_MAX = 240;
+  const BPM_DEFAULT = 120; // 2 seconds to the bar
   const clampBpm = (n) => Math.min(BPM_MAX, Math.max(BPM_MIN, Math.round(n)));
 
   let key = null;
@@ -643,7 +644,7 @@
     if (state.view === 'song') h += '&view=song';
     if (state.prog.length) h += '&p=' + encodeProg();
     if (state.loop) h += '&loop=1';
-    if (state.bpm !== 100) h += '&bpm=' + state.bpm;
+    if (state.bpm !== BPM_DEFAULT) h += '&bpm=' + state.bpm;
     if (location.hash.slice(1) === h) return;
     // Sandboxed iframes forbid history writes; the app works fine without them.
     try { history.replaceState(null, '', '#' + h); } catch (e) { /* no shareable URL here */ }

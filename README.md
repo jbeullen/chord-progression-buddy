@@ -34,14 +34,18 @@ is hidden there and a minor key entering song mode moves to its parallel major.
 Click any chord to append it to the progression underneath, then play, loop,
 or clear it.
 
-The tempo control in the key bar governs every sound the page makes, in both
-modes: the progression, the worked examples in theory mode, and how long a
-chord rings when you click one. It reads in beats per minute counted one chord
-to the bar of 4/4, so 100 BPM holds a chord for 2.4 seconds. It can be dragged
-during playback and takes effect from the next chord. A progression is stored as grid positions rather than as chords,
-so **changing key transposes it** — build `I vi IV V` in C, switch to G, and it
-follows you. The progression rides in the URL too, so a worked-out sequence is
-a link you can send someone.
+A progression is stored as grid positions rather than as chords, so **changing
+key transposes it** — build `I vi IV V` in C, switch to G, and it follows you.
+The progression rides in the URL too, so a worked-out sequence is a link you
+can send someone.
+
+## Tempo
+
+The control in the key bar governs every sound the page makes, in both modes:
+the progression, the worked examples in theory mode, and how long a chord rings
+when you click one. It reads in beats per minute counted one chord to the bar
+of 4/4, so the default of 120 BPM holds a chord for two seconds. It can be
+dragged during playback and takes effect from the next chord.
 
 ## What Theory mode shows
 
