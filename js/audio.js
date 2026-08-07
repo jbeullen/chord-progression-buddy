@@ -149,7 +149,35 @@ const Sound = (() => {
   /* Voices currently scheduled or sounding, so playback can be cut short. */
   let live = [];
 
-  function tone(freq, t0, dur, gain) {
+  /* Two envelopes. A struck chord decays away like a plucked instrument, which
+   * suits a one-off click. A chord in a progression has to hold until the next
+   * one is due, or the sequence reads as a string of separate hits rather than
+   * as harmony moving — so it sustains and releases only at the end, leaving a
+   * short silence so the two chords never overlap and blur. */
+  function shapeStruck(param, t0, dur, gain) {
+    param.setValueAtTime(0.0001, t0);
+    param.linearRampToValueAtTime(gain, t0 + 0.014);
+    param.exponentialRampToValueAtTime(gain * 0.4, t0 + dur * 0.45);
+    param.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    return t0 + dur;
+  }
+
+  function shapeSustained(param, t0, dur, gain) {
+    const attack = Math.min(0.012, dur * 0.1);
+    const decay = Math.min(0.16, dur * 0.25);
+    const release = Math.min(0.14, dur * 0.25);
+    const sustain = gain * 0.72;
+    const releaseAt = Math.max(t0 + attack + decay, t0 + dur - release);
+
+    param.setValueAtTime(0.0001, t0);
+    param.linearRampToValueAtTime(gain, t0 + attack);
+    param.exponentialRampToValueAtTime(sustain, t0 + attack + decay);
+    param.setValueAtTime(sustain, releaseAt); // hold the level until the release
+    param.exponentialRampToValueAtTime(0.0001, releaseAt + release);
+    return releaseAt + release;
+  }
+
+  function tone(freq, t0, dur, gain, sustained) {
     const osc = ctx.createOscillator();
     const shimmer = ctx.createOscillator();
     const g = ctx.createGain();
@@ -161,14 +189,17 @@ const Sound = (() => {
     shimmer.frequency.value = freq;
     shimmer.detune.value = 7;
 
+    // A held chord keeps some brightness; a struck one darkens as it decays.
     lp.type = 'lowpass';
     lp.frequency.setValueAtTime(4200, t0);
-    lp.frequency.exponentialRampToValueAtTime(1400, t0 + dur);
+    lp.frequency.exponentialRampToValueAtTime(
+      sustained ? 2200 : 1400,
+      t0 + (sustained ? Math.min(0.9, dur) : dur)
+    );
 
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.linearRampToValueAtTime(gain, t0 + 0.014);
-    g.gain.exponentialRampToValueAtTime(gain * 0.4, t0 + dur * 0.45);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    const endsAt = sustained
+      ? shapeSustained(g.gain, t0, dur, gain)
+      : shapeStruck(g.gain, t0, dur, gain);
 
     osc.connect(lp);
     shimmer.connect(lp);
@@ -177,8 +208,8 @@ const Sound = (() => {
 
     osc.start(t0);
     shimmer.start(t0);
-    osc.stop(t0 + dur + 0.06);
-    shimmer.stop(t0 + dur + 0.06);
+    osc.stop(endsAt + 0.06);
+    shimmer.stop(endsAt + 0.06);
 
     const voice = { osc, shimmer, g };
     live.push(voice);
@@ -208,12 +239,13 @@ const Sound = (() => {
   }
 
   /* Schedule a chord at an absolute context time. The sequencer works this way
-   * so its timing comes from the audio clock rather than from setTimeout. */
+   * so its timing comes from the audio clock rather than from setTimeout.
+   * Sequenced chords hold rather than decay. */
   function chordAt(midis, when, dur = 1.1) {
     if (muted) return;
     const c = ensure();
     if (!c || c.state !== 'running') return;
-    midis.forEach((m, i) => tone(midiToFreq(m), when + i * 0.014, dur, 0.19 - i * 0.012));
+    midis.forEach((m, i) => tone(midiToFreq(m), when + i * 0.01, dur, 0.15 - i * 0.009, true));
   }
 
   const now = () => {
@@ -234,7 +266,8 @@ const Sound = (() => {
    * highlight along with the sound. */
   function sequence(chordList, opts = {}) {
     const gap = opts.gap || 0.72;
-    const dur = opts.dur || gap * 1.35;
+    // Default to holding the chord until just before the next one.
+    const dur = opts.dur || Math.max(0.25, gap - 0.09);
     const delays = chordList.map((_, i) => i * gap);
     if (!muted) {
       whenRunning((c) => {
@@ -242,7 +275,7 @@ const Sound = (() => {
         chordList.forEach((midis, i) => {
           const t0 = base + delays[i];
           const d = i === chordList.length - 1 ? dur * 1.6 : dur;
-          midis.forEach((m, j) => tone(midiToFreq(m), t0 + j * 0.014, d, 0.19 - j * 0.012));
+          midis.forEach((m, j) => tone(midiToFreq(m), t0 + j * 0.01, d, 0.15 - j * 0.009, true));
         });
       });
     }

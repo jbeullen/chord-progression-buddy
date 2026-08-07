@@ -493,6 +493,12 @@
   const stepSeconds = () => (60 / state.bpm) * BEATS_PER_CHORD;
   const chordDuration = () => stepSeconds() * 0.92;
 
+  /* A sequenced chord holds until just short of the next one. The gap keeps
+   * consecutive chords from overlapping into mud, while being short enough
+   * that the progression still reads as continuous. */
+  const CHORD_GAP = 0.09;
+  const sustainSeconds = () => Math.max(0.25, stepSeconds() - CHORD_GAP);
+
   function clearMarks() {
     player.marks.forEach(clearTimeout);
     player.marks = [];
@@ -526,7 +532,7 @@
       const chord = T.songChordAt(key, state.prog[player.step]);
       const step = stepSeconds();
       if (chord) {
-        Sound.chordAt(T.voice(chord), player.nextTime, step * 0.92);
+        Sound.chordAt(T.voice(chord), player.nextTime, Math.max(0.25, step - CHORD_GAP));
         markAt(player.step, player.nextTime);
       }
       player.nextTime += step;
@@ -569,7 +575,7 @@
     clearHighlights();
     const chords = seqs[id];
     if (!chords) return;
-    const { delays, gap } = Sound.sequence(chords, { gap: stepSeconds() });
+    const { delays, gap } = Sound.sequence(chords, { gap: stepSeconds(), dur: sustainSeconds() });
     const chips = document.querySelectorAll(`.chain-chip[data-seq="${id}"]`);
     delays.forEach((d, i) => {
       seqTimers.push(setTimeout(() => {
