@@ -364,6 +364,69 @@ main {
 /* ---------------------------------------------------- progression strip -- */
 .song-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 
+.song-head-controls { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+
+.tempo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tempo label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .13em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tempo-step {
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-dim);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.tempo-step:hover { border-color: var(--accent); color: var(--accent); }
+
+#tempo {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 132px;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--line);
+  cursor: pointer;
+}
+#tempo::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 0;
+  cursor: pointer;
+}
+#tempo::-moz-range-thumb {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 0;
+  cursor: pointer;
+}
+#tempo:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+#tempoValue {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  min-width: 62px;
+}
+.tempo-hint { font-size: 11px; color: var(--muted); font-style: italic; }
+
 .transport { display: flex; gap: 7px; flex-wrap: wrap; }
 
 .transport-btn {

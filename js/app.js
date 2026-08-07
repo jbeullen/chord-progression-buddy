@@ -14,8 +14,13 @@
     /* Progression slots, not chords: {row, pos} resolved against the current
      * key, so changing key transposes what you have built. */
     prog: [],
-    loop: false
+    loop: false,
+    bpm: 100
   };
+
+  const BPM_MIN = 40;
+  const BPM_MAX = 240;
+  const clampBpm = (n) => Math.min(BPM_MAX, Math.max(BPM_MIN, Math.round(n)));
 
   let key = null;
   let singles = []; // registry of single-chord playbacks
@@ -476,9 +481,13 @@
 
   /* Timing comes from the audio clock: a short interval looks ahead and
    * schedules whatever falls inside the next fraction of a second. */
-  const STEP = 1.35;      // seconds per chord
-  const LOOKAHEAD = 0.25; // how far ahead to schedule
+  const BEATS_PER_CHORD = 4; // a chord chart counts one chord to the bar
+  const LOOKAHEAD = 0.25;    // how far ahead to schedule
   const player = { timer: null, step: 0, nextTime: 0, playing: false, marks: [] };
+
+  /* Read fresh on every chord, so dragging the tempo takes effect from the
+   * next chord rather than needing playback to be restarted. */
+  const stepSeconds = () => (60 / state.bpm) * BEATS_PER_CHORD;
 
   function clearMarks() {
     player.marks.forEach(clearTimeout);
@@ -511,11 +520,12 @@
         player.step = 0;
       }
       const chord = T.songChordAt(key, state.prog[player.step]);
+      const step = stepSeconds();
       if (chord) {
-        Sound.chordAt(T.voice(chord), player.nextTime, STEP * 0.92);
+        Sound.chordAt(T.voice(chord), player.nextTime, step * 0.92);
         markAt(player.step, player.nextTime);
       }
-      player.nextTime += STEP;
+      player.nextTime += step;
       player.step += 1;
     }
   }
@@ -585,6 +595,7 @@
     if (state.deg > 6 || state.deg < 0) state.deg = 0;
 
     renderKeyChips();
+    setBpm(state.bpm);
 
     const song = state.view === 'song';
     $('#songView').hidden = !song;
@@ -629,6 +640,7 @@
     if (state.view === 'song') h += '&view=song';
     if (state.prog.length) h += '&p=' + encodeProg();
     if (state.loop) h += '&loop=1';
+    if (state.bpm !== 100) h += '&bpm=' + state.bpm;
     if (location.hash.slice(1) === h) return;
     // Sandboxed iframes forbid history writes; the app works fine without them.
     try { history.replaceState(null, '', '#' + h); } catch (e) { /* no shareable URL here */ }
@@ -646,6 +658,8 @@
     state.view = h.get('view') === 'song' ? 'song' : 'theory';
     state.prog = decodeProg(h.get('p'));
     state.loop = h.get('loop') === '1';
+    const bpm = parseInt(h.get('bpm'), 10);
+    if (!isNaN(bpm)) state.bpm = clampBpm(bpm);
   }
 
   // ------------------------------------------------------------- events ---
@@ -732,6 +746,21 @@
       writeHash();
     }
   });
+
+  /* Tempo. The control lives in static markup rather than in a rendered panel,
+   * so adjusting it never interrupts playback. */
+  function setBpm(value, fromSlider) {
+    state.bpm = clampBpm(value);
+    if (!fromSlider) $('#tempo').value = state.bpm;
+    const secs = stepSeconds();
+    $('#tempoValue').textContent = state.bpm + ' BPM';
+    $('#tempoValue').title = secs.toFixed(2) + ' seconds per chord';
+    writeHash();
+  }
+
+  $('#tempo').addEventListener('input', (e) => setBpm(e.currentTarget.value, true));
+  $('#tempoDown').addEventListener('click', () => setBpm(state.bpm - 5));
+  $('#tempoUp').addEventListener('click', () => setBpm(state.bpm + 5));
 
   $('#progPlay').addEventListener('click', startPlayback);
   $('#progStop').addEventListener('click', stopPlayback);
