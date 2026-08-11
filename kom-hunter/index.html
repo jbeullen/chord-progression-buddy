@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOM Hunter — which Strava KOMs are in range?</title>
+<meta name="description" content="Cross-references your starred Strava segments against your own power-duration curve to show which KOMs you could actually attack.">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="page-head">
+  <div class="head-main">
+    <h1>KOM Hunter</h1>
+    <p class="tagline">Your starred segments, priced in watts. Every KOM becomes a number you either have or you don't.</p>
+  </div>
+  <div class="rate" id="rate" hidden>
+    <span class="rate-label">API budget</span>
+    <span class="rate-bar"><i id="rate-fill"></i></span>
+    <span class="rate-text mono" id="rate-text">—</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ------------------------------------------------------------ connect -->
+<section class="card" id="connect-card">
+  <div class="card-head">
+    <h2>Connect</h2>
+    <span class="chip" id="conn-chip">Not connected</span>
+  </div>
+
+  <div id="connect-form">
+    <p class="muted">Paste a Strava access token. It is kept in this browser's local storage and sent only to <span class="mono">api.strava.com</span>.</p>
+    <div class="row">
+      <label class="grow">
+        <span class="lbl">Access token</span>
+        <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="e.g. a1b2c3d4…">
+      </label>
+      <button id="connect" class="primary">Connect</button>
+    </div>
+    <details class="help">
+      <summary>How to get a token with the right scopes</summary>
+      <ol>
+        <li>Create an API application at <span class="mono">strava.com/settings/api</span> and note its <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+        <li>Visit this URL in your browser, substituting your client ID:
+          <pre class="mono">https://www.strava.com/oauth/authorize
+  ?client_id=YOUR_ID
+  &amp;redirect_uri=http://localhost
+  &amp;response_type=code
+  &amp;scope=read,activity:read_all,profile:read_all</pre>
+          Approve it. The browser lands on a dead <span class="mono">localhost</span> page — copy the <span class="mono">code</span> value out of the address bar.</li>
+        <li>Exchange that code for a token:
+          <pre class="mono">curl -X POST https://www.strava.com/oauth/token \
+  -d client_id=YOUR_ID \
+  -d client_secret=YOUR_SECRET \
+  -d code=THE_CODE \
+  -d grant_type=authorization_code</pre>
+          Paste the <span class="mono">access_token</span> from the reply above.</li>
+      </ol>
+      <p class="muted">Tokens last six hours. When one expires the app says so and you repeat the last step with your refresh token.</p>
+    </details>
+  </div>
+
+  <div id="connected" hidden>
+    <div class="who">
+      <span id="who-name" class="who-name">—</span>
+      <span id="who-meta" class="muted mono">—</span>
+    </div>
+    <div class="row">
+      <button id="forget" class="ghost">Forget token</button>
+      <button id="clear-cache" class="ghost">Clear cached data</button>
+    </div>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------ settings -->
+<section class="card" id="setup-card" hidden>
+  <div class="card-head"><h2>Your numbers</h2></div>
+  <div class="grid">
+    <label>
+      <span class="lbl">Rider weight (kg)</span>
+      <input id="rider-kg" type="number" min="30" max="150" step="0.1">
+    </label>
+    <label>
+      <span class="lbl">Bike + kit (kg)</span>
+      <input id="bike-kg" type="number" min="4" max="25" step="0.1" value="9">
+    </label>
+    <label>
+      <span class="lbl">Attack style</span>
+      <select id="style">
+        <option value="solo" selected>Solo</option>
+        <option value="draft">With a wheel to follow</option>
+      </select>
+    </label>
+    <label>
+      <span class="lbl">Rides to read power from</span>
+      <input id="ride-count" type="number" min="3" max="60" step="1" value="15">
+    </label>
+  </div>
+  <p class="muted small">Attack style sets the drag assumption: solo uses a 0.33 m² frontal area, following a wheel uses 0.25. On climbs it barely matters; on flat sprint segments it decides the answer.</p>
+  <div class="row">
+    <button id="analyse" class="primary">Analyse starred segments</button>
+    <button id="refresh-power" class="ghost">Rebuild power curve</button>
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------ progress -->
+<section class="card" id="progress-card" hidden>
+  <div class="card-head"><h2>Working</h2><span class="chip" id="progress-chip">—</span></div>
+  <div class="bar"><i id="progress-fill"></i></div>
+  <ul class="log" id="log"></ul>
+</section>
+
+<!-- --------------------------------------------------------------- power -->
+<section class="card" id="power-card" hidden>
+  <div class="card-head">
+    <h2>Your power-duration curve</h2>
+    <span class="chip" id="power-chip">—</span>
+  </div>
+  <div class="chart-wrap"><svg id="curve" viewBox="0 0 720 300" role="img" aria-labelledby="curve-title"><title id="curve-title">Your best average power against effort duration</title></svg></div>
+  <div class="scroll">
+    <table id="power-table">
+      <thead><tr><th>Duration</th><th>Best watts</th><th>W/kg</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <details class="help">
+    <summary>No power meter? Enter your numbers by hand</summary>
+    <div class="grid">
+      <label><span class="lbl">5 sec (W)</span><input id="m5" type="number" min="0" step="1"></label>
+      <label><span class="lbl">1 min (W)</span><input id="m60" type="number" min="0" step="1"></label>
+      <label><span class="lbl">5 min (W)</span><input id="m300" type="number" min="0" step="1"></label>
+      <label><span class="lbl">20 min (W)</span><input id="m1200" type="number" min="0" step="1"></label>
+    </div>
+    <div class="row"><button id="manual-apply" class="ghost">Use these instead</button></div>
+  </details>
+</section>
+
+<!-- ------------------------------------------------------------- results -->
+<section class="card" id="results-card" hidden>
+  <div class="card-head">
+    <h2>Starred segments</h2>
+    <span class="chip" id="results-chip">—</span>
+  </div>
+  <div class="filters">
+    <div class="seg-toggle" id="verdict-filter" role="group" aria-label="Filter by verdict">
+      <button class="on" data-v="all">All</button>
+      <button data-v="live">Live</button>
+      <button data-v="close">In reach</button>
+      <button data-v="stretch">A stretch</button>
+      <button data-v="out">Out of range</button>
+    </div>
+    <label class="search">
+      <span class="lbl">Search</span>
+      <input id="search" type="search" placeholder="segment name">
+    </label>
+  </div>
+  <div class="scroll">
+    <table id="results">
+      <thead>
+        <tr>
+          <th data-sort="name">Segment</th>
+          <th data-sort="distance">Length</th>
+          <th data-sort="grade">Grade</th>
+          <th data-sort="komTime">KOM</th>
+          <th data-sort="prTime">Your PB</th>
+          <th data-sort="requiredWatts">Needs</th>
+          <th data-sort="requiredWkg">W/kg</th>
+          <th data-sort="gap">Shortfall</th>
+          <th data-sort="verdict">Verdict</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="muted small" id="results-note"></p>
+</section>
+
+<section class="card" id="error-card" hidden>
+  <div class="card-head"><h2>Problem</h2></div>
+  <p id="error-text"></p>
+</section>
+
+</main>
+
+<footer>
+  <p>Times are converted to watts with a steady-state model — gravity, rolling resistance and air drag — calibrated against your own climbing efforts. It cannot know about wind, a lead-out, or a KOM set in a bunch, so treat a close call as a reason to go and try.</p>
+</footer>
+
+<script src="js/model.js"></script>
+<script src="js/strava.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
