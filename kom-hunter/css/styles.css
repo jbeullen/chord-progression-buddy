@@ -430,3 +430,16 @@ footer p { max-width: 70ch; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Only present in the --demo build, where the API is stubbed out. */
+.demo-banner {
+  background: var(--panel);
+  border: 1px solid var(--ochre);
+  border-left: 3px solid var(--ochre);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  max-width: 80ch;
+}
+.demo-banner strong { color: var(--ink); }

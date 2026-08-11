@@ -8,12 +8,18 @@ own rides say what wattage you can hold for that long. Put those together and
 "could I take this KOM?" stops being a feeling and becomes a number — one you
 either have, or are short by.
 
-No build step, no dependencies, no backend. Three scripts and a stylesheet.
+No dependencies, no backend, no framework. Three scripts and a stylesheet;
+the build step is optional and only bundles them into one file.
 
 ```
 npm start     # serve at http://localhost:8080
 npm test      # unit tests for the model and the API client
+npm run build # inline everything into one self-contained dist/kom-hunter.html
 ```
+
+`npm run build -- --demo` produces a build with the network transport swapped
+for fixtures — the whole app, clickable without a token, for showing someone
+what it does.
 
 ## What it does
 
@@ -166,10 +172,22 @@ js/model.js       physics and power maths — pure, no DOM, no network
 js/strava.js      API client: token, cache, rate limiting, error mapping
 js/app.js         state, sync flow, rendering
 tests/            model, client, and browser end-to-end
+tools/            optional single-file bundler and its demo fixtures
 ```
 
 `model.js` is the piece worth trusting: it has no dependencies on the browser
 or the network, and its tests are anchored to real recorded power data.
+
+## Running it from a file
+
+The single-file build opens straight from disk, but a page loaded over
+`file://` has a `null` origin, and Strava may refuse the cross-origin call.
+If the browser blocks it, serve the file over http instead — any static
+server will do:
+
+```sh
+npx http-server dist -p 8080     # then open http://localhost:8080/kom-hunter.html
+```
 
 ## Licence
 

@@ -477,7 +477,10 @@
     for (const [t] of pts) {
       if (![5, 30, 60, 300, 1200, 3600].includes(t)) continue;
       svg.appendChild(el('line', { x1: x(t), x2: x(t), y1: T, y2: T + ph, stroke: 'var(--grid)', 'stroke-width': 1 }));
-      svg.appendChild(text(M.formatTime(t), { x: x(t), y: T + ph + 18, 'text-anchor': 'middle' }));
+      /* Anchor the end labels inward, or the first and last are clipped by
+       * the plot edge. */
+      const anchor = t === tMin ? 'start' : t === tMax ? 'end' : 'middle';
+      svg.appendChild(text(M.formatTime(t), { x: x(t), y: T + ph + 18, 'text-anchor': anchor }));
     }
 
     const d = pts.map(([t, p], i) => `${i ? 'L' : 'M'}${x(t).toFixed(1)},${y(p).toFixed(1)}`).join('');

@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "test": "node tests/model.test.js && node tests/strava.test.js",
+    "build": "node tools/build-single-file.js",
     "start": "node -e \"const h=require('http'),f=require('fs'),p=require('path');h.createServer((q,s)=>{const u=q.url==='/'?'/index.html':q.url.split('?')[0];const t={'.html':'text/html','.css':'text/css','.js':'text/javascript'}[p.extname(u)]||'text/plain';f.readFile('.'+u,(e,d)=>e?(s.writeHead(404),s.end('not found')):(s.writeHead(200,{'content-type':t}),s.end(d)));}).listen(8080,()=>console.log('http://localhost:8080'))\""
   },
   "license": "MIT"
