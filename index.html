@@ -16,27 +16,28 @@
       <span class="brand-mark">♭♯</span>
       <span class="brand-text">
         <strong>Chord Progression Buddy</strong>
-        <em>diatonic map · secondary dominants · modal interchange</em>
+        <em data-i18n="app.tagline"></em>
       </span>
     </div>
 
     <div class="controls">
-      <div class="seg seg-view" id="viewToggle" role="group" aria-label="Mode">
-        <button type="button" data-view="theory" class="on">Theory</button>
-        <button type="button" data-view="song">Song</button>
+      <div class="seg seg-view" id="viewToggle" role="group">
+        <button type="button" data-view="theory" class="on" data-i18n="view.theory"></button>
+        <button type="button" data-view="song" data-i18n="view.song"></button>
       </div>
-      <div class="seg" id="modeToggle" role="group" aria-label="Key quality">
-        <button type="button" data-mode="major" class="on">Major</button>
-        <button type="button" data-mode="minor">Minor</button>
+      <div class="seg" id="modeToggle" role="group">
+        <button type="button" data-mode="major" class="on" data-i18n="quality.major"></button>
+        <button type="button" data-mode="minor" data-i18n="quality.minor"></button>
       </div>
-      <button type="button" class="toggle" id="seventhToggle" aria-pressed="false">7ths</button>
-      <button type="button" class="toggle" id="muteToggle" aria-pressed="false" title="Silence chord playback">Mute</button>
+      <button type="button" class="toggle" id="seventhToggle" aria-pressed="false" data-i18n="toggle.sevenths"></button>
+      <button type="button" class="toggle" id="muteToggle" aria-pressed="false" data-i18n-title="toggle.muteTitle"></button>
+      <button type="button" class="toggle lang-toggle" id="langToggle" data-lang="nl"></button>
     </div>
   </div>
 
   <nav class="keybar" aria-label="Key">
     <div class="keybar-inner">
-      <span class="keybar-label">Key</span>
+      <span class="keybar-label" data-i18n="keybar.label"></span>
       <div class="key-chips" id="keyChips"></div>
       <button type="button" class="enharm" id="enharmSwap" hidden></button>
       <span class="key-sig" id="keySig"></span>
@@ -44,13 +45,13 @@
       <!-- Tempo governs every sound the page makes, so it lives here rather
            than inside either mode. -->
       <div class="tempo">
-        <label for="tempo">Tempo</label>
-        <button type="button" class="tempo-step" id="tempoDown" aria-label="Slower">−</button>
+        <label for="tempo" data-i18n="tempo.label"></label>
+        <button type="button" class="tempo-step" id="tempoDown" data-i18n-aria="tempo.slower">−</button>
         <input type="range" id="tempo" min="40" max="240" step="1" value="120"
-               aria-label="Tempo in beats per minute">
-        <button type="button" class="tempo-step" id="tempoUp" aria-label="Faster">+</button>
+               data-i18n-aria="tempo.aria">
+        <button type="button" class="tempo-step" id="tempoUp" data-i18n-aria="tempo.faster">+</button>
         <output for="tempo" id="tempoValue">120 BPM</output>
-        <span class="tempo-hint">one chord per bar</span>
+        <span class="tempo-hint" data-i18n="tempo.hint"></span>
       </div>
     </div>
   </nav>
@@ -65,21 +66,19 @@
     <section class="panel">
       <div class="panel-head">
         <h1 id="songTitle">Build a progression in C major</h1>
-        <p class="sub">Click any chord to add it to the progression. The middle row is the key itself;
-           reach up for a dominant that pulls into the chord below it, or down for a borrowed chord
-           that recolours it.</p>
+        <p class="sub" data-i18n="song.sub"></p>
       </div>
       <div class="song-grid" id="songGrid"></div>
     </section>
 
     <section class="panel">
       <div class="panel-head song-head">
-        <h2>Progression</h2>
+        <h2 data-i18n="prog.heading"></h2>
         <div class="transport">
-          <button type="button" class="transport-btn play" id="progPlay">▶ Play</button>
-          <button type="button" class="transport-btn" id="progStop">■ Stop</button>
-          <button type="button" class="transport-btn" id="progLoop" aria-pressed="false">⟳ Loop</button>
-          <button type="button" class="transport-btn" id="progClear">Clear</button>
+          <button type="button" class="transport-btn play" id="progPlay"></button>
+          <button type="button" class="transport-btn" id="progStop"></button>
+          <button type="button" class="transport-btn" id="progLoop" aria-pressed="false"></button>
+          <button type="button" class="transport-btn" id="progClear"></button>
         </div>
       </div>
       <div class="prog-strip" id="progStrip"></div>
@@ -95,13 +94,13 @@
     </div>
     <div class="chord-row" id="chordRow"></div>
     <p class="legend">
-      <span class="dot fn-tonic"></span> Tonic — home
-      <span class="dot fn-predominant"></span> Pre-dominant — sets up the cadence
-      <span class="dot fn-dominant"></span> Dominant — wants to resolve
-      <span class="hint">Click a chord to explore it · click any chord name to hear it</span>
+      <span class="dot fn-tonic"></span> <span data-i18n="legend.tonic"></span>
+      <span class="dot fn-predominant"></span> <span data-i18n="legend.predominant"></span>
+      <span class="dot fn-dominant"></span> <span data-i18n="legend.dominant"></span>
+      <span class="hint" data-i18n="legend.hint"></span>
     </p>
     <p class="number-key">
-      Numbers <span><b>1</b> major</span><span><b>2-</b> minor</span><span><b>5D</b> dominant</span><span><b>7-♭5</b> half-diminished</span>
+      <span data-i18n="numbers.label"></span><span><b>1</b> <span data-i18n="numbers.major"></span></span><span><b>2-</b> <span data-i18n="numbers.minor"></span></span><span><b>5D</b> <span data-i18n="numbers.dominant"></span></span><span><b>7-♭5</b> <span data-i18n="numbers.halfDim"></span></span>
     </p>
   </section>
 
@@ -126,28 +125,27 @@
   <!-- --------------------------------------------------------- diagnostics -->
   <section class="panel debug-panel" id="debugPanel" hidden>
     <div class="panel-head">
-      <h2>Diagnostics</h2>
-      <p class="sub">Here to answer one question when playback misbehaves: is this page producing
-         sound, or is the sound being lost somewhere after it?</p>
+      <h2 data-i18n="diag.heading"></h2>
+      <p class="sub" data-i18n="diag.sub"></p>
     </div>
     <div class="debug-controls">
-      <button type="button" class="toggle" id="soundTest">Test sound</button>
-      <button type="button" class="toggle" id="debugRefresh">Refresh readings</button>
+      <button type="button" class="toggle" id="soundTest"></button>
+      <button type="button" class="toggle" id="debugRefresh" data-i18n="diag.refresh"></button>
     </div>
     <p class="audio-notice" id="debugResult" hidden></p>
     <dl class="debug-facts" id="debugFacts"></dl>
   </section>
 
   <footer class="footer">
-    <p>Everything here is generated from the key you picked — the spellings, the numerals and the voice
-       leading are all computed, not looked up in a table.</p>
-    <p class="footer-sub">Inspired by the cardboard chord wheels musicians have used for decades.</p>
+    <p data-i18n="footer.line1"></p>
+    <p class="footer-sub" data-i18n="footer.line2"></p>
     <p class="footer-sub">
-      <button type="button" class="link-button" id="debugToggle" aria-expanded="false">Diagnostics</button>
+      <button type="button" class="link-button" id="debugToggle" aria-expanded="false" data-i18n="diag.link"></button>
     </p>
   </footer>
 </main>
 
+<script src="js/i18n.js"></script>
 <script src="js/theory.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/app.js"></script>

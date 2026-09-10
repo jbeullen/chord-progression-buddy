@@ -15,8 +15,26 @@
      * key, so changing key transposes what you have built. */
     prog: [],
     loop: false,
-    bpm: 120
+    bpm: 120,
+    lang: 'en'
   };
+
+  const t = I18N.t;
+
+  /* Key names are localised: "C major" in English, "C majeur" in Dutch. */
+  const keyName = (k) => t('key.name', { tonic: k.tonicName, mode: t('mode.' + k.mode) });
+
+  /* Prose from the theory layer arrives as a key plus values. The names of the
+   * current key and its relative are added here, since only this layer knows
+   * what language to say them in. */
+  function say(entry) {
+    return t(entry.key, Object.assign({
+      key: keyName(key),
+      relKey: keyName(key.relative),
+      short: key.shortName,
+      relShort: key.relative.shortName
+    }, entry.params));
+  }
 
   const BPM_MIN = 40;
   const BPM_MAX = 240;
@@ -73,7 +91,7 @@
     const items = chords.map((c, i) =>
       `<span class="chain-chip" data-seq="${id}" data-pos="${i}">${(texts && texts[i]) || label(c)}</span>`
     ).join('<span class="arrow">→</span>');
-    return `<div class="chain"><button type="button" class="play-seq" data-playseq="${id}" aria-label="Play progression">▶</button>
+    return `<div class="chain"><button type="button" class="play-seq" data-playseq="${id}" aria-label="${t('prog.playAria')}">▶</button>
       <div class="chain-chips">${items}</div></div>`;
   }
 
@@ -95,6 +113,30 @@
     return match || (mode === 'major' ? 'C' : 'A');
   }
 
+  /* Everything written directly in the markup, marked with data-i18n. */
+  function renderStaticText() {
+    document.documentElement.lang = state.lang;
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      el.innerHTML = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+      el.setAttribute('aria-label', t(el.dataset.i18nAria));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      el.title = t(el.dataset.i18nTitle);
+    });
+    const other = state.lang === 'en' ? 'nl' : 'en';
+    $('#langToggle').textContent = t('lang.switchTo');
+    $('#langToggle').setAttribute('aria-label', t('lang.switchTo'));
+    $('#langToggle').dataset.lang = other;
+    $('#muteToggle').textContent = t(Sound.isMuted() ? 'toggle.unmute' : 'toggle.mute');
+    $('#progPlay').textContent = t(player.playing ? 'prog.playing' : 'prog.play');
+    $('#progStop').textContent = t('prog.stop');
+    $('#progLoop').textContent = t('prog.loop');
+    $('#progClear').textContent = t('prog.clear');
+    $('#soundTest').textContent = t('diag.test');
+  }
+
   function renderKeyChips() {
     const list = keyList();
     const alt = T.ENHARMONICS[state.mode];
@@ -110,7 +152,7 @@
     const btn = $('#enharmSwap');
     if (swap) {
       btn.hidden = false;
-      btn.textContent = 'Spell as ' + swap + (state.mode === 'minor' ? 'm' : '');
+      btn.textContent = t('keybar.spellAs', { name: swap + (state.mode === 'minor' ? 'm' : '') });
       btn.dataset.key = swap;
     } else {
       btn.hidden = true;
@@ -119,8 +161,8 @@
     const sig = key.signature;
     const n = Math.abs(sig);
     $('#keySig').textContent = sig === 0
-      ? 'no sharps or flats'
-      : `${n} ${sig > 0 ? T.SHARP : T.FLAT}${n === 1 ? '' : 's'}`;
+      ? t('keybar.noAccidentals')
+      : t(n === 1 ? 'keybar.sharpsOne' : 'keybar.sharps', { n, sym: sig > 0 ? T.SHARP : T.FLAT });
 
     document.querySelectorAll('#modeToggle button').forEach((b) => {
       b.classList.toggle('on', b.dataset.mode === state.mode);
@@ -130,10 +172,10 @@
   // ------------------------------------------------------------ diatonic ---
 
   function renderDiatonic() {
-    $('#keyTitle').textContent = 'The chords in ' + key.name;
-    $('#scaleLine').innerHTML = 'Scale: ' + key.scaleNotes.map((n) =>
+    $('#keyTitle').textContent = t('theory.title', { key: keyName(key) });
+    $('#scaleLine').innerHTML = t('theory.scale') + ' ' + key.scaleNotes.map((n) =>
       `<span class="sn">${T.noteName(n)}</span>`).join('') +
-      `<span class="sig-inline">${key.relative.name} is its relative key</span>`;
+      `<span class="sig-inline">${t('theory.relativeIs', { key: keyName(key.relative) })}</span>`;
 
     $('#chordRow').innerHTML = key.diatonic.map((c) => {
       const sel = c.degree === state.deg ? ' is-selected' : '';
@@ -144,7 +186,7 @@
         <div class="roman">${roman(c)}</div>
         <div class="sym">${label(c)}</div>
         <div class="sym-alt">${state.sevenths ? c.symbol : c.symbol7}</div>
-        <div class="deg-name">${c.degreeName}</div>
+        <div class="deg-name">${t('degree.' + c.degreeKey)}</div>
       </div>`;
     }).join('');
   }
@@ -160,9 +202,10 @@
         <div class="rel-head">
           ${chip(entry.chord, label(entry.chord))}
           <span class="rn">${entry.label}</span>
-          ${entry.title ? `<span class="tag">${entry.title}</span>` : ''}
+          ${I18N.t(entry.key + '.title') !== entry.key + '.title'
+            ? `<span class="tag">${t(entry.key + '.title')}</span>` : ''}
         </div>
-        <p>${entry.text}</p>
+        <p>${say(entry)}</p>
         ${chain(chords)}
       </li>`;
 
@@ -172,44 +215,55 @@
     const extras = [];
     if (ctx.interchange) {
       extras.push(`<div class="note-card">
-        <h4>Modal interchange</h4>
-        <p>${ctx.interchange.text}</p>
+        <h4>${t('detail.interchange')}</h4>
+        <p>${say(ctx.interchange)}</p>
         ${chain([chord, ctx.interchange.chord, key.diatonic[0]])}
       </div>`);
     }
     if (ctx.asDominant) {
       extras.push(`<div class="note-card">
-        <h4>Use it as a dominant</h4>
-        <p>Make it ${ctx.asDominant.chord.symbol7} and it stops being ${chord.roman} — it becomes the
-           dominant of ${ctx.asDominant.target.symbol} (${ctx.asDominant.target.roman}) and pulls there instead.</p>
+        <h4>${t('detail.asDominant')}</h4>
+        <p>${t('detail.asDominant.text', {
+          dom: ctx.asDominant.chord.symbol7,
+          roman: chord.roman,
+          target: ctx.asDominant.target.symbol,
+          targetRoman: ctx.asDominant.target.roman
+        })}</p>
         ${chain([chord, ctx.asDominant.chord, ctx.asDominant.target])}
       </div>`);
     }
     if (ctx.relative) {
       extras.push(`<div class="note-card">
-        <h4>Its job in ${key.relative.name}</h4>
-        <p>${ctx.relative.text}</p>
-        <p class="mini-fact">${chord.symbol}: <b>${chord.roman}</b> (${chord.fnLabel}) in ${key.name} ·
-           <b>${ctx.relative.roman}</b> (${ctx.relative.fn}) in ${key.relative.name}</p>
+        <h4>${t('detail.relative', { key: keyName(key.relative) })}</h4>
+        <p>${say(ctx.relative)}</p>
+        <p class="mini-fact">${t('detail.relative.fact', {
+          chord: chord.symbol,
+          homeRoman: chord.roman,
+          homeFn: t('fn.' + chord.fn),
+          key: keyName(key),
+          relRoman: ctx.relative.roman,
+          relFn: t('fn.' + ctx.relative.fn),
+          relKey: keyName(key.relative)
+        })}</p>
       </div>`);
     }
 
     $('#detailPanel').innerHTML = `
       <div class="panel-head">
-        <h2>${chord.symbol} <span class="thin">— the ${chord.roman} chord</span></h2>
+        <h2>${chord.symbol} <span class="thin">${t('detail.thin', { roman: chord.roman })}</span></h2>
         <p class="sub">
           <span class="pill">${chord.number}</span>
-          <span class="pill fn-pill fn-${chord.fn}">${chord.fnLabel}</span>
-          ${chord.degreeName} · ${notesOf(chord)}
+          <span class="pill fn-pill fn-${chord.fn}">${t('fn.' + chord.fn)}</span>
+          ${t('degree.' + chord.degreeKey)} · ${notesOf(chord)}
         </p>
       </div>
       <div class="detail-grid">
         <div class="detail-block">
-          <h3>How to get <em>to</em> ${chord.symbol}</h3>
+          <h3>${t('detail.approaches', { chord: chord.symbol })}</h3>
           <ul class="rel-list">${approaches}</ul>
         </div>
         <div class="detail-block">
-          <h3>Where ${chord.symbol} wants to go</h3>
+          <h3>${t('detail.departures', { chord: chord.symbol })}</h3>
           <ul class="rel-list">${departures}</ul>
         </div>
       </div>
@@ -232,38 +286,41 @@
     const rows = pivots.map((p) => `
       <tr>
         <td>${chip(p.chord, p.chord.symbol)}</td>
-        <td><b>${p.homeRoman}</b><span class="muted"> ${p.homeFn}</span></td>
-        <td><b>${p.relativeRoman}</b><span class="muted"> ${p.relativeFn}</span></td>
+        <td><b>${p.homeRoman}</b><span class="muted"> ${t('fn.' + p.homeFn)}</span></td>
+        <td><b>${p.relativeRoman}</b><span class="muted"> ${p.relativeFn ? t('fn.' + p.relativeFn) : '—'}</span></td>
       </tr>`).join('');
 
     const routeList = (list) => list.map((r) => `
       <li>
-        <div class="route-label">${r.label}</div>
+        <div class="route-label">${t(r.key + '.label')}</div>
         ${chain(r.chords)}
-        <p>${r.text}</p>
+        <p>${say(r)}</p>
       </li>`).join('');
 
     $('#relativePanel').innerHTML = `
       <div class="panel-head">
-        <h2>Relative key <span class="thin">— ${rel.name}</span></h2>
-        <p class="sub">Same seven notes as ${key.name}, different centre of gravity.
-           ${key.shortName} is <b>${key.diatonic[0].roman}</b> here and
-           <b>${pivots[0].relativeRoman}</b> there.</p>
+        <h2>${t('relative.heading')} <span class="thin">${t('relative.thin', { key: keyName(rel) })}</span></h2>
+        <p class="sub">${t('relative.sub', {
+          key: keyName(key),
+          short: key.shortName,
+          homeRoman: key.diatonic[0].roman,
+          relRoman: pivots[0].relativeRoman
+        })}</p>
       </div>
       <div class="mini-row">${mini}</div>
 
-      <h3>Every chord is a pivot</h3>
+      <h3>${t('relative.pivots')}</h3>
       <div class="table-wrap">
         <table class="grid-table">
-          <thead><tr><th>Chord</th><th>in ${key.name}</th><th>in ${rel.name}</th></tr></thead>
+          <thead><tr><th>${t('relative.colChord')}</th><th>${t('relative.colIn', { key: keyName(key) })}</th><th>${t('relative.colIn', { key: keyName(rel) })}</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
 
-      <h3>Getting <em>to</em> ${rel.shortName}</h3>
+      <h3>${t('relative.into', { key: rel.shortName })}</h3>
       <ul class="route-list">${routeList(routes.into)}</ul>
 
-      <h3>Getting <em>back</em> to ${key.shortName}</h3>
+      <h3>${t('relative.outOf', { key: key.shortName })}</h3>
       <ul class="route-list">${routeList(routes.out)}</ul>`;
   }
 
@@ -279,7 +336,7 @@
         </td>
         <td>${chip(s.two, s.two.symbol7)}<span class="rn">${s.two.roman}</span></td>
         <td>${chip(s.dominant, s.dominant.symbol7)}<span class="rn">${s.dominant.roman}</span></td>
-        <td>${chip(s.sub, s.sub.symbol7)}<span class="rn">tritone sub</span></td>
+        <td>${chip(s.sub, s.sub.symbol7)}<span class="rn">${t('secondary.tritoneSub')}</span></td>
         <td>${chip(s.leadingTone, s.leadingTone.symbol7)}<span class="rn">${s.leadingTone.roman}</span></td>
         <td class="vl">
           <span class="vl-move">${T.noteName(r.third.from)} <i>→</i> ${T.noteName(r.third.to)}</span>
@@ -291,23 +348,23 @@
 
     $('#secondaryPanel').innerHTML = `
       <div class="panel-head">
-        <h2>Secondary dominants</h2>
-        <p class="sub">Every chord can be treated as a temporary tonic. Borrow its dominant, and the ear
-           follows you there — then you are still in ${key.name} when you land.</p>
+        <h2>${t('secondary.heading')}</h2>
+        <p class="sub">${t('secondary.sub', { key: keyName(key) })}</p>
       </div>
       <div class="table-wrap">
         <table class="grid-table wide">
           <thead>
             <tr>
-              <th>To reach</th><th>Its ii</th><th>Its V7</th><th>Tritone sub</th>
-              <th>Leading-tone °7</th><th>What resolves</th><th>Hear it</th>
+              <th>${t('secondary.colTarget')}</th><th>${t('secondary.colTwo')}</th>
+              <th>${t('secondary.colFive')}</th><th>${t('secondary.colTritone')}</th>
+              <th>${t('secondary.colLeading')}</th><th>${t('secondary.colResolves')}</th>
+              <th>${t('secondary.colHear')}</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <p class="footnote">The V7 column is the workhorse: its 3rd rises a semitone into the target root and
-         its 7th falls a semitone onto the target third. That squeeze is the whole trick.</p>`;
+      <p class="footnote">${t('secondary.footnote')}</p>`;
   }
 
   // -------------------------------------------------- modal interchange ---
@@ -322,17 +379,20 @@
           <span class="borrow-roman">${c.roman}</span>
           ${chip(c, c.symbol, 'big')}
         </div>
-        <p class="borrow-note">${c.note}</p>
-        <p class="borrow-meta">${notesOf(c)}${c.replaces ? ` · in place of ${c.replaces.symbol} (${c.replaces.roman})` : ''}</p>
+        <p class="borrow-note">${t(c.noteKey)}</p>
+        <p class="borrow-meta">${notesOf(c)}${c.replaces
+          ? t('borrowed.replaces', { chord: c.replaces.symbol, roman: c.replaces.roman }) : ''}</p>
         ${chain(chords)}
       </div>`;
     }).join('');
 
     $('#borrowedPanel').innerHTML = `
       <div class="panel-head">
-        <h2>Modal interchange</h2>
-        <p class="sub">Chords lifted from ${T.noteName(key.tonic)} ${key.parallel.mode} — same tonic, other
-           mode. They keep the key but change its colour.</p>
+        <h2>${t('borrowed.heading')}</h2>
+        <p class="sub">${t('borrowed.sub', {
+          tonic: T.noteName(key.tonic),
+          parallelMode: t('mode.' + key.parallel.mode)
+        })}</p>
       </div>
       <div class="borrow-grid">${cards}</div>`;
   }
@@ -343,28 +403,24 @@
     const cards = T.progressions(key).map((p) => `
       <div class="prog-card">
         <div class="prog-head">
-          <h4>${p.name}</h4>
+          <h4>${t(p.nameKey)}</h4>
           <span class="prog-romans">${p.chords.map((c) => c.roman).join(' – ')}</span>
         </div>
         ${chain(p.chords)}
-        <p class="prog-note">${p.note}</p>
+        <p class="prog-note">${t(p.noteKey)}</p>
       </div>`).join('');
 
     $('#progressionPanel').innerHTML = `
       <div class="panel-head">
-        <h2>Progressions in ${key.name}</h2>
-        <p class="sub">The same shapes every songwriter reaches for, already transposed for you.</p>
+        <h2>${t('progressions.heading', { key: keyName(key) })}</h2>
+        <p class="sub">${t('progressions.sub')}</p>
       </div>
       <div class="prog-grid">${cards}</div>`;
   }
 
   // ------------------------------------------------------------ song mode ---
 
-  const ROW_LABELS = {
-    secondary: 'Secondary dominants',
-    main: 'Main chords',
-    interchange: 'Modal interchange'
-  };
+  const ROWS = ['secondary', 'main', 'interchange'];
 
   /* Drawn rather than typed, so they render the same everywhere. */
   const LOOP_ICON =
@@ -374,7 +430,7 @@
   const NO_LOOP_ICON = LOOP_ICON.replace('</svg>', '<path class="slash" d="M2 2l20 20"/></svg>');
 
   function renderSong() {
-    $('#songTitle').textContent = 'Build a progression in ' + key.name;
+    $('#songTitle').textContent = t('song.title', { key: keyName(key) });
     const grid = T.songLayout(key);
 
     /* Each button carries all three notations, as in theory mode: the numeral,
@@ -385,7 +441,7 @@
       const name = songLabel(chord);
       return `<div class="song-cell">
         <button type="button" class="song-chord ${row}" data-add-row="${row}" data-add-pos="${col.pos}"
-                title="Add ${name} to the progression">
+                title="${t('song.addTitle', { chord: name })}">
           <span class="song-roman">${chord.roman}</span>
           <span class="song-sym">${name}</span>
           <span class="song-num">${chord.number}</span>
@@ -400,7 +456,7 @@
       <div class="song-band">
         <div class="song-lead">${opts.lead || ''}</div>
         <div class="song-col">
-          <div class="song-row-label">${ROW_LABELS[row]}</div>
+          <div class="song-row-label">${t('song.row.' + row)}</div>
           <div class="song-box box-${row}">
             ${opts.legend || ''}
             <div class="song-box-inner">
@@ -429,24 +485,24 @@
         </div>
       </div>`;
 
-    const mixHint = `<span class="hint-label do-mix">${LOOP_ICON}<span>Mix chords</span></span>`;
+    const mixHint = `<span class="hint-label do-mix">${LOOP_ICON}<span>${t('song.mix')}</span></span>`;
 
     $('#songGrid').innerHTML =
       band('secondary', {
-        hint: `<span class="hint-label no-mix">${NO_LOOP_ICON}<span>Don’t mix</span></span>`
+        hint: `<span class="hint-label no-mix">${NO_LOOP_ICON}<span>${t('song.dontMix')}</span></span>`
       }) +
       arrowBand((col) => col.secondary, '↓', 'down') +
       band('main', {
-        lead: '<span class="lead-note">Start here<span class="lead-arrow" aria-hidden="true">→</span></span>',
-        legend: '<span class="box-legend"><span aria-hidden="true">↑</span> Up to any chord</span>',
+        lead: `<span class="lead-note">${t('song.startHere')}<span class="lead-arrow" aria-hidden="true">→</span></span>`,
+        legend: `<span class="box-legend"><span aria-hidden="true">↑</span> ${t('song.upToAny')}</span>`,
         hint: mixHint
       }) +
       arrowBand((col) => col.interchange, '<span>↑</span><span>↓</span>', 'both') +
       band('interchange', {
         legend: '<span class="box-legend on-interchange">' +
-          '<span aria-hidden="true">↓</span> down: to any chord ' +
-          '<span class="legend-sep">·</span> ' +
-          '<span aria-hidden="true">↑</span> up: follow the arrows</span>',
+          '<span aria-hidden="true">↓</span> ' + t('song.downUp') +
+          ' <span class="legend-sep">·</span> ' +
+          '<span aria-hidden="true">↑</span> ' + t('song.followArrows') + '</span>',
         hint: mixHint
       });
   }
@@ -454,7 +510,7 @@
   function renderProgression() {
     const strip = $('#progStrip');
     if (!state.prog.length) {
-      strip.innerHTML = `<p class="prog-empty">No chords yet — click any chord above to start building.</p>`;
+      strip.innerHTML = `<p class="prog-empty">${t('prog.empty')}</p>`;
     } else {
       strip.innerHTML = state.prog.map((slot, i) => {
         const chord = T.songChordAt(key, slot);
@@ -466,7 +522,7 @@
           <span class="prog-roman">${chord.roman}</span>
           <span class="prog-name">${songLabel(chord)}</span>
           <span class="prog-num">${chord.number}</span>
-          <button type="button" class="prog-remove" data-remove="${i}" aria-label="Remove ${chord.symbol}">×</button>
+          <button type="button" class="prog-remove" data-remove="${i}" aria-label="${t('prog.remove', { chord: chord.symbol })}">×</button>
         </div>`;
       }).join('');
     }
@@ -478,7 +534,7 @@
     $('#progLoop').classList.toggle('on', state.loop);
     $('#progLoop').setAttribute('aria-pressed', String(state.loop));
     $('#progPlay').classList.toggle('on', player.playing);
-    $('#progPlay').textContent = player.playing ? '▶ Playing' : '▶ Play';
+    $('#progPlay').textContent = t(player.playing ? 'prog.playing' : 'prog.play');
   }
 
   // ------------------------------------------------------------ sequencer ---
@@ -607,6 +663,7 @@
     key = T.buildKey(T.parseNote(state.tonic), state.mode);
     if (state.deg > 6 || state.deg < 0) state.deg = 0;
 
+    renderStaticText();
     renderKeyChips();
     setBpm(state.bpm);
 
@@ -654,6 +711,7 @@
     if (state.prog.length) h += '&p=' + encodeProg();
     if (state.loop) h += '&loop=1';
     if (state.bpm !== BPM_DEFAULT) h += '&bpm=' + state.bpm;
+    if (state.lang !== 'en') h += '&lang=' + state.lang;
     if (location.hash.slice(1) === h) return;
     // Sandboxed iframes forbid history writes; the app works fine without them.
     try { history.replaceState(null, '', '#' + h); } catch (e) { /* no shareable URL here */ }
@@ -671,6 +729,11 @@
     state.view = h.get('view') === 'song' ? 'song' : 'theory';
     state.prog = decodeProg(h.get('p'));
     state.loop = h.get('loop') === '1';
+    /* Without an explicit choice, follow the browser: a Dutch browser opens in
+     * Dutch. The toggle overrides it and the choice rides in the URL. */
+    const lang = h.get('lang') ||
+      ((navigator.language || '').toLowerCase().startsWith('nl') ? 'nl' : 'en');
+    state.lang = I18N.set(lang);
     const bpm = parseInt(h.get('bpm'), 10);
     if (!isNaN(bpm)) state.bpm = clampBpm(bpm);
   }
@@ -722,6 +785,12 @@
       e.preventDefault();
       onActivate(e.target);
     }
+  });
+
+  $('#langToggle').addEventListener('click', (e) => {
+    state.lang = I18N.set(e.currentTarget.dataset.lang);
+    render();
+    if (!$('#debugPanel').hidden) renderDebugFacts();
   });
 
   $('#viewToggle').addEventListener('click', (e) => {
@@ -813,8 +882,8 @@
     Sound.setMuted(muted);
     e.currentTarget.setAttribute('aria-pressed', String(muted));
     e.currentTarget.classList.toggle('on', muted);
-    e.currentTarget.textContent = muted ? 'Unmute' : 'Mute';
-    e.currentTarget.title = muted ? 'Turn chord playback back on' : 'Silence chord playback';
+    e.currentTarget.textContent = t(muted ? 'toggle.unmute' : 'toggle.mute');
+    e.currentTarget.title = t(muted ? 'toggle.unmuteTitle' : 'toggle.muteTitle');
   });
 
   function notify(el, kind, html) {
@@ -828,24 +897,20 @@
    * allowed to play sound. */
   Sound.onBlocked(() => {
     notify($('#audioNotice'), 'bad',
-      'This browser will not start audio on this page. If you are viewing it embedded in ' +
-      'another page, open it in its own tab and the chords will play. ' +
-      'There is a <b>Diagnostics</b> panel at the foot of the page.');
+      t('diag.blocked'));
   });
 
   // ---------------------------------------------------------- diagnostics ---
 
   function renderDebugFacts() {
     const facts = [
-      ['Audio context', Sound.state()],
-      ['Sample rate', Sound.sampleRate() ? Sound.sampleRate() + ' Hz' : '—'],
-      ['Output route', Sound.route() === 'media-element'
-        ? 'media element — ignores the iOS silent switch'
-        : Sound.route()],
-      ['Playback', Sound.isMuted() ? 'muted' : 'on'],
-      ['Embedded in a frame', window.self !== window.top ? 'yes — audio may be blocked here' : 'no'],
-      ['Key', key.name + ' · ' + key.diatonic[state.deg].symbol + ' selected'],
-      ['Browser', navigator.userAgent]
+      [t('diag.context'), Sound.state()],
+      [t('diag.sampleRate'), Sound.sampleRate() ? Sound.sampleRate() + ' Hz' : '—'],
+      [t('diag.route'), Sound.route() === 'media-element' ? t('diag.routeMedia') : Sound.route()],
+      [t('diag.playback'), t(Sound.isMuted() ? 'diag.muted' : 'diag.on')],
+      [t('diag.framed'), t(window.self !== window.top ? 'diag.framedYes' : 'diag.framedNo')],
+      [t('diag.key'), t('diag.keyValue', { key: keyName(key), chord: key.diatonic[state.deg].symbol })],
+      [t('diag.browser'), navigator.userAgent]
     ];
     $('#debugFacts').innerHTML = facts.map(([k, v]) =>
       `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
@@ -870,27 +935,21 @@
     const btn = e.currentTarget;
     const out = $('#debugResult');
     if (Sound.isMuted()) {
-      notify(out, 'warn', 'Playback is muted. Click <b>Unmute</b> in the top bar and test again.');
+      notify(out, 'warn', t('diag.isMuted'));
       return;
     }
     btn.disabled = true;
-    btn.textContent = 'Listening…';
+    btn.textContent = t('diag.listening');
     const r = await Sound.test();
     btn.disabled = false;
-    btn.textContent = 'Test sound';
+    btn.textContent = t('diag.test');
 
     if (r.producing) {
-      notify(out, 'ok', `Audio is working — the page produced sound at ${Math.round(r.peak * 100)}% of full scale ` +
-        `(audio context: ${r.state}). If you still hear nothing, the sound is being lost after this page: ` +
-        `check your system volume, the tab's mute state, and whether this page is embedded in another one — ` +
-        `an embedded frame is often not allowed to play audio, and opening it in its own tab fixes that.`);
+      notify(out, 'ok', t('diag.working', { pct: Math.round(r.peak * 100), state: r.state }));
     } else {
-      notify(out, 'bad', `No audio came out of the page (audio context: ${r.state}). ` +
-        (r.state === 'suspended'
-          ? 'The browser is refusing to start audio here, which usually means this page is embedded in a frame that is not permitted to play sound. Open it in its own tab.'
-          : r.state === 'unsupported'
-            ? 'This browser does not support the Web Audio API.'
-            : 'Try reloading the page, then click a chord before testing again.'));
+      const why = r.state === 'suspended' ? 'suspended'
+        : r.state === 'unsupported' ? 'unsupported' : 'other';
+      notify(out, 'bad', t('diag.none', { state: r.state }) + t('diag.none.' + why));
     }
     renderDebugFacts();
   });

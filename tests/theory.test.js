@@ -42,8 +42,8 @@ is(romans(C.diatonic), 'I ii iii IV V vi vii°', 'C major numerals');
 is(C.diatonic.map((c) => c.roman7).join(' '), 'Imaj7 ii7 iii7 IVmaj7 V7 vi7 viiø7', 'C major seventh numerals');
 is(C.diatonic.map((c) => c.number).join(' '), '1 2- 3- 4 5D 6- 7-♭5', 'C major numbers');
 is(C.diatonic.map((c) => c.fn).join(' '), 'tonic predominant tonic predominant dominant tonic dominant', 'C major functions');
-is(C.diatonic[6].degreeName, 'Leading tone', 'degree 7 of a major key leads');
-is(C.relative.name, 'A minor', 'relative of C major');
+is(C.diatonic[6].degreeKey, 'leading', 'degree 7 of a major key leads');
+is(C.relative.shortName + ' ' + C.relative.mode, 'Am minor', 'relative of C major');
 
 is(symbols(T.buildKey(T.parseNote('Eb'), 'major').diatonic), 'E♭ Fm Gm A♭ B♭ Cm Ddim', 'E♭ major triads');
 
@@ -59,8 +59,8 @@ is(T.numberFor(T.chordOn(T.parseNote('G'), 'maj', 'maj7'), C.scaleNotes), '5', '
 is(T.numberFor(T.chordOn(T.parseNote('G'), 'maj'), C.scaleNotes), '5', 'a bare G triad claims nothing about a seventh');
 is(T.numberFor(T.chordOn(T.parseNote('A'), 'maj', 'dom7'), C.scaleNotes), '6D', 'the secondary dominant A7 is 6D');
 is(T.numberFor(T.chordOn(T.parseNote('B'), 'dim', 'dim7'), C.scaleNotes), '7°', 'a fully diminished seventh is not the same as 7-♭5');
-is(Am.diatonic[6].degreeName, 'Subtonic', 'degree 7 of a natural minor key does not lead');
-is(Am.relative.name, 'C major', 'relative of A minor');
+is(Am.diatonic[6].degreeKey, 'subtonic', 'degree 7 of a natural minor key does not lead');
+is(Am.relative.shortName + ' ' + Am.relative.mode, 'C major', 'relative of A minor');
 is(symbols(T.buildKey(T.parseNote('F#'), 'minor').diatonic), 'F♯m G♯dim A Bm C♯m D E', 'F♯ minor triads');
 
 // --------------------------------------------------- secondary dominants ---
@@ -99,11 +99,13 @@ is(ctxTwo.relative.roman, 'iv', 'Dm is iv in A minor');
 is(ctxTwo.asDominant.target.symbol, 'G', 'D7 would pull to G');
 
 const ctxOne = T.chordContext(C, C.diatonic[0]);
-is(ctxOne.approaches.map((a) => a.title).join(', '), 'Authentic cadence, Plagal cadence, Backdoor', 'ways home to the tonic');
+is(ctxOne.approaches.map((a) => a.key).join(', '), 'approach.authentic, approach.plagal, approach.backdoor', 'ways home to the tonic');
 is(ctxOne.approaches[2].chord.symbol7, 'B♭7', 'the backdoor into C is B♭7');
 
 // --------------------------------------------------------- progressions ---
 const displays = (p) => p.chords.map((c) => c.display).join(' ');
+// The theory layer names progressions with keys, not prose.
+is(T.progressions(C)[0].nameKey, 'prog.major.axis.name', 'progressions carry translation keys');
 const pr = T.progressions(C);
 is(displays(pr[0]), 'C G Am F', 'axis progression in C');
 is(displays(pr[2]), 'Dm7 G7 Cmaj7', 'ii–V–I in C');
@@ -181,6 +183,30 @@ let emptySymbols = 0;
 });
 is(spellingProblems, 0, 'no chord anywhere needs more than a double accidental');
 is(emptySymbols, 0, 'every chord in every key has a symbol and a numeral');
+
+// ------------------------------- every emitted key must exist in both languages ---
+const I18N = eval(fs.readFileSync(path.join(__dirname, '..', 'js', 'i18n.js'), 'utf8') + ';I18N;');
+is(I18N.audit().length, 0, 'the dictionary has no gaps between languages');
+
+const emitted = new Set();
+['major', 'minor'].forEach((mode) => {
+  const k = T.buildKey(T.parseNote('C'), mode);
+  k.diatonic.forEach((c) => {
+    emitted.add('degree.' + c.degreeKey);
+    emitted.add('fn.' + c.fn);
+    const ctx = T.chordContext(k, c);
+    ctx.approaches.forEach((a) => emitted.add(a.key));
+    ctx.departures.forEach((d) => emitted.add(d.key));
+    if (ctx.interchange) emitted.add(ctx.interchange.key);
+    if (ctx.relative) emitted.add(ctx.relative.key);
+  });
+  T.borrowedChords(k).forEach((c) => { emitted.add(c.noteKey); emitted.add(c.sourceKey); });
+  const routes = T.relativeRoutes(k);
+  [...routes.into, ...routes.out].forEach((r) => { emitted.add(r.key); emitted.add(r.key + '.label'); });
+  T.progressions(k).forEach((pr) => { emitted.add(pr.nameKey); emitted.add(pr.noteKey); });
+});
+const unknown = [...emitted].filter((key) => I18N.t(key) === key);
+is(unknown.length, 0, 'every key the theory layer emits is translated: ' + unknown.join(', '));
 
 // ------------------------------------------------------------------ done ---
 if (failures.length) {

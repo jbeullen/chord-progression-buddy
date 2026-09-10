@@ -13,12 +13,12 @@ const root = path.join(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 const css = read('css/styles.css');
-const js = ['js/theory.js', 'js/audio.js', 'js/app.js'].map(read).join('\n\n');
+const js = ['js/i18n.js', 'js/theory.js', 'js/audio.js', 'js/app.js'].map(read).join('\n\n');
 
 const standalone = read('index.html')
   .replace(/^[ \t]*<link rel="stylesheet"[^>]*>\n/m, `<style>\n${css}\n</style>\n`)
   .replace(
-    /^[ \t]*<script src="js\/theory\.js"><\/script>[\s\S]*?<script src="js\/app\.js"><\/script>\n/m,
+    /^[ \t]*<script src="js\/i18n\.js"><\/script>[\s\S]*?<script src="js\/app\.js"><\/script>\n/m,
     `<script>\n${js}\n</script>\n`
   );
 

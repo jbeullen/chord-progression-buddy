@@ -8,6 +8,24 @@ Everything on the page is **computed from the key you picked**. There are no
 lookup tables of chords per key, so the spellings stay correct all the way out
 to D♯ minor (D♯ E♯ F♯ G♯ A♯ B C♯ — not E♭ F G♭…).
 
+## Two languages
+
+A toggle in the top bar switches the whole interface between English and Dutch —
+headings, prose, chord functions, scale degrees and the explanations, not just
+the buttons. Chord names and numerals are notation and stay as they are.
+
+Without an explicit choice the page follows the browser, so a Dutch browser
+opens in Dutch; the toggle overrides that and the choice rides in the URL
+(`#lang=nl`).
+
+`js/i18n.js` holds every word the page can show. Nothing else contains
+user-facing prose: `theory.js` emits keys and values, `app.js` renders them.
+`npm test` fails if either language is missing a key the theory layer emits.
+
+One translation worth knowing about: in Dutch, *parallelle toonsoort* is the
+**relative** key (C majeur / a mineur) and *gelijknamige toonsoort* is the
+**parallel** one (C majeur / c mineur) — the opposite of the English words.
+
 ## Two modes
 
 **Theory** lays the key out to be read and understood. **Song** lays it out to be
@@ -121,6 +139,7 @@ npm run build    # → dist/chord-progression-buddy.html
 
 ## How it works
 
+- `js/i18n.js` — the dictionary, and the only file holding user-facing prose.
 - `js/theory.js` — the engine. Notes are `{ letter, acc }` pairs rather than
   pitch classes, and every interval move carries both a letter distance and a
   semitone distance. That is what keeps a minor third spelled as a third and

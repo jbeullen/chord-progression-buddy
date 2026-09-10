@@ -216,21 +216,21 @@ const Theory = (() => {
 
   // ------------------------------------------------------------ functions ---
 
-  const DEGREE_NAMES = ['Tonic', 'Supertonic', 'Mediant', 'Subdominant', 'Dominant', 'Submediant', 'Leading tone'];
+  /* Names are the presentation layer's business: this layer emits keys and
+   * lets the translation table turn them into words. */
+  const DEGREE_KEYS = ['tonic', 'supertonic', 'mediant', 'subdominant', 'dominant', 'submediant', 'leading'];
 
   const FUNCTION_BY_DEGREE = {
     major: ['tonic', 'predominant', 'tonic', 'predominant', 'dominant', 'tonic', 'dominant'],
     minor: ['tonic', 'predominant', 'tonic', 'predominant', 'dominant', 'predominant', 'dominant']
   };
 
-  const FUNCTION_LABEL = { tonic: 'Tonic', predominant: 'Pre-dominant', dominant: 'Dominant' };
-
-  function degreeName(scaleNotes, deg) {
+  function degreeKey(scaleNotes, deg) {
     if (deg === 6) {
       const gap = mod12(pc(scaleNotes[0]) - pc(scaleNotes[6]));
-      return gap === 1 ? 'Leading tone' : 'Subtonic';
+      return gap === 1 ? 'leading' : 'subtonic';
     }
-    return DEGREE_NAMES[deg];
+    return DEGREE_KEYS[deg];
   }
 
   // ------------------------------------------------------------- the key ---
@@ -247,9 +247,8 @@ const Theory = (() => {
       chord.roman = romanFor(chord, scaleNotes);
       chord.roman7 = romanFor(chord, scaleNotes, { seventh: true });
       chord.number = numberFor(chord, scaleNotes);
-      chord.degreeName = degreeName(scaleNotes, deg);
+      chord.degreeKey = degreeKey(scaleNotes, deg);
       chord.fn = FUNCTION_BY_DEGREE[mode][deg];
-      chord.fnLabel = FUNCTION_LABEL[chord.fn];
       chord.id = 'deg' + deg;
       return chord;
     });
@@ -265,16 +264,15 @@ const Theory = (() => {
       chord.roman = romanFor(chord, relativeScale);
       chord.roman7 = romanFor(chord, relativeScale, { seventh: true });
       chord.number = numberFor(chord, relativeScale);
-      chord.degreeName = degreeName(relativeScale, deg);
+      chord.degreeKey = degreeKey(relativeScale, deg);
       chord.fn = FUNCTION_BY_DEGREE[relativeMode][deg];
-      chord.fnLabel = FUNCTION_LABEL[chord.fn];
       return chord;
     });
 
     return {
       tonic,
       mode,
-      name: noteName(tonic) + ' ' + (mode === 'major' ? 'major' : 'minor'),
+      tonicName: noteName(tonic),
       shortName: noteName(tonic) + (mode === 'major' ? '' : 'm'),
       scaleNotes,
       signature: keySignature(tonic, mode),
@@ -283,7 +281,7 @@ const Theory = (() => {
       relative: {
         tonic: relativeTonic,
         mode: relativeMode,
-        name: noteName(relativeTonic) + ' ' + relativeMode,
+        tonicName: noteName(relativeTonic),
         shortName: noteName(relativeTonic) + (relativeMode === 'major' ? '' : 'm'),
         scaleNotes: relativeScale,
         diatonic: relativeDiatonic,
@@ -346,27 +344,6 @@ const Theory = (() => {
 
   // ------------------------------------------------------ modal interchange ---
 
-  const BORROW_NOTES = {
-    major: {
-      0: 'The parallel minor tonic. Dark, and a strong way to pivot into the minor key.',
-      1: 'Half-diminished pre-dominant. Push it straight into V for an instant minor-key colour.',
-      2: 'Flat mediant. Lifts a major progression sideways: I – ' + FLAT + 'III – IV.',
-      3: 'The famous one. IV → iv → I is the single most-used borrowed move in pop.',
-      4: 'Minor v. Softens the cadence — no leading tone, so it drifts instead of resolving.',
-      5: 'Flat submediant. Big cinematic drop, classic in ' + FLAT + 'VI – ' + FLAT + 'VII – I.',
-      6: 'Flat seventh. The "backdoor" chord — ' + FLAT + 'VII7 → I sounds like a plagal dominant.'
-    },
-    minor: {
-      0: 'Picardy third. End a minor piece on the major tonic and it feels resolved, not sad.',
-      1: 'Minor-key ii from Dorian. Brighter pre-dominant than ii°.',
-      2: 'Raised mediant. Rare, mostly a passing chord towards IV.',
-      3: 'The Dorian IV. Raises the 6th and makes a minor groove sound modal, not tragic.',
-      4: 'Major V from harmonic minor. This is how a minor key gets a real leading tone.',
-      5: 'Raised submediant. Dorian brightness, works between iv and V.',
-      6: 'Raised subtonic diminished — the leading-tone chord, an alternative to V7.'
-    }
-  };
-
   function borrowedChords(key) {
     const parallelScale = key.parallel.scaleNotes;
     const out = [];
@@ -379,8 +356,8 @@ const Theory = (() => {
       chord.roman = romanFor(chord, key.scaleNotes);
       chord.roman7 = romanFor(chord, key.scaleNotes, { seventh: true });
       chord.number = numberFor(chord, key.scaleNotes);
-      chord.note = BORROW_NOTES[key.mode][deg];
-      chord.source = 'Parallel ' + key.parallel.mode;
+      chord.noteKey = 'borrow.' + key.mode + '.' + deg;
+      chord.sourceKey = 'source.parallel.' + key.parallel.mode;
       chord.replaces = home;
       out.push(chord);
     });
@@ -390,8 +367,8 @@ const Theory = (() => {
     const neapolitan = chordOn(minorSecondAbove(key.tonic), 'maj', 'maj7');
     neapolitan.roman = FLAT + 'II';
     neapolitan.number = FLAT + '2';
-    neapolitan.note = 'Neapolitan. A major chord on the flat 2nd — dramatic pre-dominant, goes to V.';
-    neapolitan.source = 'Chromatic';
+    neapolitan.noteKey = 'borrow.neapolitan';
+    neapolitan.sourceKey = 'source.chromatic';
     out.push(neapolitan);
 
     return out;
@@ -408,8 +385,8 @@ const Theory = (() => {
         chord,
         homeRoman: chord.roman,
         relativeRoman: match ? match.roman : '—',
-        homeFn: chord.fnLabel,
-        relativeFn: match ? match.fnLabel : '—'
+        homeFn: chord.fn,
+        relativeFn: match ? match.fn : null
       };
     });
   }
@@ -439,44 +416,45 @@ const Theory = (() => {
     return {
       into: [
         {
-          label: 'The direct way — borrow its dominant',
+          key: 'route.into.dominant',
           chords: [homeTonic, relDom, relTonic],
-          text: 'Play ' + relDom.symbol7 + ' (that is V7/' + stripSeventh(key.diatonic[rel.degreeInHome].roman) +
-            ' in ' + key.name + ') and the ear lands on ' + relTonic.symbol + ' as the new home.'
+          params: {
+            dom: relDom.symbol7,
+            roman: 'V7/' + stripSeventh(key.diatonic[rel.degreeInHome].roman),
+            target: relTonic.symbol
+          }
         },
         {
-          label: 'The smooth way — ii–V into the new key',
+          key: 'route.into.twoFive',
           chords: [homeTonic, relTwo, relDom, relTonic],
-          text: 'Set the dominant up first: ' + relTwo.symbol7 + ' – ' + relDom.symbol7 + ' – ' +
-            relTonic.symbol + '. Two bars and you are fully in ' + rel.name + '.'
+          params: { two: relTwo.symbol7, dom: relDom.symbol7, target: relTonic.symbol }
         },
         {
-          label: 'The invisible way — pivot chord',
+          key: 'route.into.pivot',
           chords: [homeTonic, pivot, relDom, relTonic],
-          text: pivot.symbol + ' is ' + pivot.roman + ' in ' + key.name + ' and ' +
-            (pivotRel ? pivotRel.roman : '—') + ' in ' + rel.name +
-            '. Enter on it, then cadence with ' + relDom.symbol7 + ' and nobody hears the seam.'
+          params: {
+            pivot: pivot.symbol,
+            homeRoman: pivot.roman,
+            relRoman: pivotRel ? pivotRel.roman : '—',
+            dom: relDom.symbol7
+          }
         }
       ],
       out: [
         {
-          label: 'Straight back home',
+          key: 'route.out.dominant',
           chords: [relTonic, homeDom, homeTonic],
-          text: 'One chord does it: ' + (homeDom.symbol7 || homeDom.symbol) + ' is the dominant of ' +
-            key.name + ' and of nothing in ' + rel.name + ', so it drags the ear straight back to ' +
-            homeTonic.symbol + '.'
+          params: { dom: homeDom.symbol7 || homeDom.symbol, target: homeTonic.symbol }
         },
         {
-          label: 'ii–V back home',
+          key: 'route.out.twoFive',
           chords: [relTonic, homeTwo, homeDom, homeTonic],
-          text: homeTwo.symbol7 + ' – ' + (homeDom.symbol7 || homeDom.symbol) + ' – ' + homeTonic.symbol +
-            ' re-establishes ' + key.name + ' in one phrase.'
+          params: { two: homeTwo.symbol7, dom: homeDom.symbol7 || homeDom.symbol, target: homeTonic.symbol }
         },
         {
-          label: 'Slide back by step',
+          key: 'route.out.step',
           chords: [relTonic, key.diatonic[6], homeTonic],
-          text: rel.shortName + ' → ' + key.diatonic[6].symbol + ' → ' + homeTonic.symbol +
-            ': the leading-tone chord drags you home without a full cadence.'
+          params: { from: rel.shortName, via: key.diatonic[6].symbol, target: homeTonic.symbol }
         }
       ],
       relDom,
@@ -497,77 +475,79 @@ const Theory = (() => {
     const approaches = [];
     if (!isTonic && chord.quality !== 'dim') {
       approaches.push({
-        title: 'Secondary dominant',
+        key: 'approach.secondary',
         chord: sec.dominant,
         label: sec.dominant.roman,
-        text: 'Borrow ' + chord.symbol + '’s own V7. ' +
-          noteName(sec.resolution.third.from) + ' → ' + noteName(sec.resolution.third.to) +
-          ' and ' + noteName(sec.resolution.seventh.from) + ' → ' + noteName(sec.resolution.seventh.to) +
-          ' — the tritone closes in and hands you the chord.'
+        params: {
+          chord: chord.symbol,
+          thirdFrom: noteName(sec.resolution.third.from),
+          thirdTo: noteName(sec.resolution.third.to),
+          seventhFrom: noteName(sec.resolution.seventh.from),
+          seventhTo: noteName(sec.resolution.seventh.to)
+        }
       });
       approaches.push({
-        title: 'Its own ii–V',
+        key: 'approach.twoFive',
         chord: sec.two,
         label: sec.two.roman,
-        text: 'Two bars of set-up: ' + sec.two.symbol7 + ' – ' + sec.dominant.symbol7 + ' – ' + chord.symbol + '.'
+        params: { two: sec.two.symbol7, dom: sec.dominant.symbol7, chord: chord.symbol }
       });
       approaches.push({
-        title: 'Tritone substitute',
+        key: 'approach.tritone',
         chord: sec.sub,
         label: sec.sub.roman,
-        text: 'Same tritone as ' + sec.dominant.symbol7 + ', but the bass slides down a semitone into ' +
-          noteName(chord.root) + '.'
+        params: { dom: sec.dominant.symbol7, root: noteName(chord.root) }
       });
       approaches.push({
-        title: 'Leading-tone diminished',
+        key: 'approach.leadingTone',
         chord: sec.leadingTone,
         label: sec.leadingTone.roman,
-        text: 'A softer approach than the V7 — same pull, no root movement underneath.'
+        params: {}
       });
     } else if (isTonic) {
       const five = Object.assign({}, key.diatonic[4], { display: key.diatonic[4].symbol7 });
       const four = key.diatonic[3];
       approaches.push({
-        title: 'Authentic cadence',
+        key: 'approach.authentic',
         chord: five,
         label: five.roman7,
-        text: (five.symbol7 || five.symbol) + ' → ' + chord.symbol + '. The strongest arrival there is.'
+        params: { dom: five.symbol7 || five.symbol, chord: chord.symbol }
       });
       approaches.push({
-        title: 'Plagal cadence',
+        key: 'approach.plagal',
         chord: four,
         label: four.roman,
-        text: four.symbol + ' → ' + chord.symbol + '. The "amen" — restful rather than conclusive.'
+        params: { four: four.symbol, chord: chord.symbol }
       });
       const backdoor = chordOn(step(key.tonic, 6, 10), 'maj', 'dom7');
       backdoor.display = backdoor.symbol7;
       backdoor.roman = FLAT + 'VII7';
       approaches.push({
-        title: 'Backdoor',
+        key: 'approach.backdoor',
         chord: backdoor,
         label: FLAT + 'VII7',
-        text: backdoor.symbol7 + ' → ' + chord.symbol + '. Borrowed from the parallel minor, and it lands sideways.'
+        params: { backdoor: backdoor.symbol7, chord: chord.symbol }
       });
     }
 
     // Departures — where this chord naturally wants to go inside the key.
     const departures = [];
-    const push = (targetDeg, text) => {
+    const push = (targetDeg, k, params) => {
       const t = key.diatonic[targetDeg];
-      departures.push({ chord: t, label: t.roman, text });
+      departures.push({ chord: t, label: t.roman, key: k, params: params || {} });
     };
     if (chord.fn === 'tonic') {
-      push(3, 'Move out to the pre-dominant side and start a phrase.');
-      push(4, 'Straight to the dominant for a short, punchy turnaround.');
-      push(1, 'The jazz route: ' + chord.roman + ' – ii – V – I.');
+      push(3, 'depart.tonic.predominant');
+      push(4, 'depart.tonic.dominant');
+      push(1, 'depart.tonic.jazz', { roman: chord.roman });
     } else if (chord.fn === 'predominant') {
-      push(4, 'Pre-dominant → dominant. This is the move the whole system is built around.');
-      push(0, 'Fall back to the tonic for a plagal, unresolved feel.');
-      push(6, 'Up to the leading-tone chord for a tighter, more chromatic push.');
+      push(4, 'depart.predominant.dominant');
+      push(0, 'depart.predominant.tonic');
+      push(6, 'depart.predominant.leadingTone');
     } else {
-      push(0, 'Resolve. The leading tone rises, the seventh falls.');
-      push(5, 'Deceptive cadence — the ear expects the tonic and gets its relative instead.');
-      push(3, 'Step back to the pre-dominant and go around again.');
+      push(0, 'depart.dominant.resolve');
+      push(5, 'depart.dominant.deceptive');
+      push(3, 'depart.dominant.again');
     }
 
     // This chord acting as a dominant of something else.
@@ -585,9 +565,14 @@ const Theory = (() => {
       parallelChord.roman7 = romanFor(parallelChord, key.scaleNotes, { seventh: true });
       interchange = {
         chord: parallelChord,
-        text: 'Swap ' + chord.symbol + ' for ' + parallelChord.symbol + ' (' + parallelChord.roman +
-          ', borrowed from ' + noteName(key.tonic) + ' ' + key.parallel.mode +
-          ') to recolour the same slot without changing the melody note underneath it.'
+        key: 'detail.interchange.text',
+        params: {
+          chord: chord.symbol,
+          swap: parallelChord.symbol,
+          roman: parallelChord.roman,
+          parallelMode: key.parallel.mode,
+          tonic: noteName(key.tonic)
+        }
       };
     }
 
@@ -603,13 +588,17 @@ const Theory = (() => {
       relative: relMatch
         ? {
             roman: relMatch.roman,
-            fn: relMatch.fnLabel,
-            text: chord.symbol + ' is ' + chord.roman + ' here and ' + relMatch.roman + ' in ' +
-              key.relative.name + '. Land on it, follow with ' +
-              (key.relative.mode === 'minor'
+            fn: relMatch.fn,
+            key: 'detail.relative.text',
+            params: {
+              chord: chord.symbol,
+              homeRoman: chord.roman,
+              relRoman: relMatch.roman,
+              dom: key.relative.mode === 'minor'
                 ? chordOn(fifthAbove(key.relative.tonic), 'maj', 'dom7').symbol7
-                : key.relative.diatonic[4].symbol7) +
-              ' → ' + key.relative.diatonic[0].symbol + ', and the key has changed underneath you.'
+                : key.relative.diatonic[4].symbol7,
+              target: key.relative.diatonic[0].symbol
+            }
           }
         : null
     };
@@ -621,24 +610,24 @@ const Theory = (() => {
    * dominant of a degree, {bor} borrowed from the parallel mode, {nea}. */
   const PROGRESSIONS = {
     major: [
-      { name: 'Axis / pop', tokens: [{ d: 0 }, { d: 4 }, { d: 5 }, { d: 3 }], note: 'Four chords, half the charts.' },
-      { name: 'Doo-wop', tokens: [{ d: 0 }, { d: 5 }, { d: 3 }, { d: 4 }], note: 'The 50s turnaround.' },
-      { name: 'ii–V–I', tokens: [{ d: 1, s: true }, { d: 4, s: true }, { d: 0, s: true }], note: 'The jazz cadence, with sevenths.' },
-      { name: 'Secondary lift', tokens: [{ d: 0 }, { sec: 1 }, { d: 1, s: true }, { d: 4, s: true }], note: 'V7/ii pulls the ii in hard.' },
-      { name: 'Into the relative minor', tokens: [{ d: 0 }, { d: 3 }, { sec: 5 }, { d: 5 }], note: 'V7/vi is the door to the relative key.' },
-      { name: 'Borrowed iv', tokens: [{ d: 0 }, { d: 3 }, { bor: 3 }, { d: 0 }], note: 'The classic modal interchange move.' },
-      { name: 'Backdoor', tokens: [{ bor: 3 }, { bor: 6, s: true }, { d: 0, s: true }], note: 'iv – ' + FLAT + 'VII7 – Imaj7.' },
-      { name: 'Descending bass', tokens: [{ d: 0 }, { d: 4 }, { d: 5 }, { d: 2 }, { d: 3 }], note: 'Pachelbel’s escalator.' }
+      { id: 'axis', tokens: [{ d: 0 }, { d: 4 }, { d: 5 }, { d: 3 }] },
+      { id: 'doowop', tokens: [{ d: 0 }, { d: 5 }, { d: 3 }, { d: 4 }] },
+      { id: 'twoFiveOne', tokens: [{ d: 1, s: true }, { d: 4, s: true }, { d: 0, s: true }] },
+      { id: 'secondaryLift', tokens: [{ d: 0 }, { sec: 1 }, { d: 1, s: true }, { d: 4, s: true }] },
+      { id: 'toRelative', tokens: [{ d: 0 }, { d: 3 }, { sec: 5 }, { d: 5 }] },
+      { id: 'borrowedFour', tokens: [{ d: 0 }, { d: 3 }, { bor: 3 }, { d: 0 }] },
+      { id: 'backdoor', tokens: [{ bor: 3 }, { bor: 6, s: true }, { d: 0, s: true }] },
+      { id: 'descending', tokens: [{ d: 0 }, { d: 4 }, { d: 5 }, { d: 2 }, { d: 3 }] }
     ],
     minor: [
-      { name: 'Natural minor loop', tokens: [{ d: 0 }, { d: 5 }, { d: 2 }, { d: 6 }], note: 'i – VI – III – VII, endlessly.' },
-      { name: 'Harmonic cadence', tokens: [{ d: 0 }, { d: 3 }, { bor: 4 }, { d: 0 }], note: 'The major V gives minor its leading tone.' },
-      { name: 'iiø–V–i', tokens: [{ d: 1, s: true }, { bor: 4, s: true }, { d: 0, s: true }], note: 'The minor jazz cadence.' },
-      { name: 'Andalusian', tokens: [{ d: 0 }, { d: 6 }, { d: 5 }, { bor: 4 }], note: 'i – VII – VI – V, flamenco staple.' },
-      { name: 'To the relative major', tokens: [{ d: 0 }, { d: 5 }, { sec: 2 }, { d: 2 }], note: 'V7/III opens the relative major.' },
-      { name: 'Dorian groove', tokens: [{ d: 0 }, { bor: 3 }, { d: 0 }, { d: 6 }], note: 'The raised 6th keeps it from going tragic.' },
-      { name: 'Picardy ending', tokens: [{ d: 0 }, { d: 3 }, { bor: 4, s: true }, { bor: 0 }], note: 'Finish on the major tonic.' },
-      { name: 'Neapolitan cadence', tokens: [{ d: 0 }, { nea: true }, { bor: 4, s: true }, { d: 0 }], note: 'Drama in three chords.' }
+      { id: 'naturalLoop', tokens: [{ d: 0 }, { d: 5 }, { d: 2 }, { d: 6 }] },
+      { id: 'harmonicCadence', tokens: [{ d: 0 }, { d: 3 }, { bor: 4 }, { d: 0 }] },
+      { id: 'twoFiveOne', tokens: [{ d: 1, s: true }, { bor: 4, s: true }, { d: 0, s: true }] },
+      { id: 'andalusian', tokens: [{ d: 0 }, { d: 6 }, { d: 5 }, { bor: 4 }] },
+      { id: 'toRelative', tokens: [{ d: 0 }, { d: 5 }, { sec: 2 }, { d: 2 }] },
+      { id: 'dorian', tokens: [{ d: 0 }, { bor: 3 }, { d: 0 }, { d: 6 }] },
+      { id: 'picardy', tokens: [{ d: 0 }, { d: 3 }, { bor: 4, s: true }, { bor: 0 }] },
+      { id: 'neapolitan', tokens: [{ d: 0 }, { nea: true }, { bor: 4, s: true }, { d: 0 }] }
     ]
   };
 
@@ -672,8 +661,8 @@ const Theory = (() => {
 
   function progressions(key) {
     return PROGRESSIONS[key.mode].map((p) => ({
-      name: p.name,
-      note: p.note,
+      nameKey: 'prog.' + key.mode + '.' + p.id + '.name',
+      noteKey: 'prog.' + key.mode + '.' + p.id + '.note',
       chords: p.tokens.map((t) => resolveToken(key, t))
     }));
   }
