@@ -230,6 +230,11 @@ main {
 /* ======================================================== song mode ==== */
 .seg-view button.on { background: var(--tonic); color: #06231a; }
 
+/* The instrument switch is a sound control, so it takes the colour the rest of
+ * the sound controls use rather than the accent that marks the current key. */
+.seg-sound button { padding: 6px 11px; font-size: 12.5px; }
+.seg-sound button.on { background: var(--pre); color: #04182e; }
+
 /* The three rows must stay in vertical register — a dominant has to sit above
  * the chord it resolves to. So the grid never reflows to fewer columns; on a
  * narrow screen it scrolls sideways as one piece instead. Every band repeats

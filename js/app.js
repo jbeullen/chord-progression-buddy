@@ -16,7 +16,8 @@
     prog: [],
     loop: false,
     bpm: 120,
-    lang: 'en'
+    lang: 'en',
+    instrument: 'synth'
   };
 
   const t = I18N.t;
@@ -680,6 +681,7 @@
     document.querySelectorAll('#viewToggle button').forEach((b) => {
       b.classList.toggle('on', b.dataset.view === state.view);
     });
+    renderInstrument();
 
     if (song) {
       renderSong();
@@ -762,6 +764,7 @@
     if (state.loop) h += '&loop=1';
     if (state.bpm !== BPM_DEFAULT) h += '&bpm=' + state.bpm;
     if (state.lang !== 'en') h += '&lang=' + state.lang;
+    if (state.instrument !== 'synth') h += '&snd=' + state.instrument;
     if (location.hash.slice(1) === h) return;
     // Sandboxed iframes forbid history writes; the app works fine without them.
     try { history.replaceState(null, '', '#' + h); } catch (e) { /* no shareable URL here */ }
@@ -786,6 +789,8 @@
     state.lang = I18N.set(lang);
     const bpm = parseInt(h.get('bpm'), 10);
     if (!isNaN(bpm)) state.bpm = clampBpm(bpm);
+    state.instrument = h.get('snd') === 'piano' ? 'piano' : 'synth';
+    Sound.setInstrument(state.instrument);
   }
 
   // ------------------------------------------------------------- events ---
@@ -964,6 +969,24 @@
     e.currentTarget.classList.toggle('on', state.sevenths);
     render();
   });
+
+  /* Switching instrument mid-phrase would leave half a chord in the old one,
+   * so anything already scheduled is cut first. */
+  $('#instrumentToggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-instrument]');
+    if (!btn || btn.dataset.instrument === state.instrument) return;
+    stopPlayback();
+    state.instrument = btn.dataset.instrument;
+    Sound.setInstrument(state.instrument);
+    renderInstrument();
+    writeHash();
+  });
+
+  function renderInstrument() {
+    document.querySelectorAll('#instrumentToggle button').forEach((b) => {
+      b.classList.toggle('on', b.dataset.instrument === state.instrument);
+    });
+  }
 
   /* The label names the action, not the state: a silent page should never
    * tempt anyone into clicking the control that silences it. */

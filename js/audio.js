@@ -177,7 +177,18 @@ const Sound = (() => {
     return releaseAt + release;
   }
 
-  function tone(freq, t0, dur, gain, sustained) {
+  /* Keep every sound source of one note together, so stopping early can cut
+   * all of them and the bookkeeping does not care what made the sound. */
+  function register(sources, g) {
+    const voice = { sources, g };
+    live.push(voice);
+    sources[0].onended = () => {
+      const i = live.indexOf(voice);
+      if (i > -1) live.splice(i, 1);
+    };
+  }
+
+  function toneSynth(freq, t0, dur, gain, sustained) {
     const osc = ctx.createOscillator();
     const shimmer = ctx.createOscillator();
     const g = ctx.createGain();
@@ -210,13 +221,118 @@ const Sound = (() => {
     shimmer.start(t0);
     osc.stop(endsAt + 0.06);
     shimmer.stop(endsAt + 0.06);
+    register([osc, shimmer], g);
+  }
 
-    const voice = { osc, shimmer, g };
-    live.push(voice);
-    osc.onended = () => {
-      const i = live.indexOf(voice);
-      if (i > -1) live.splice(i, 1);
-    };
+  /* ------------------------------------------------------------- piano ---
+   *
+   * The same chords, struck rather than held. There are no samples here and
+   * there is no room for any — the whole app is meant to run from a file on
+   * disk — so this is a piano argued from what a piano does rather than
+   * recorded from one. Three things carry most of it:
+   *
+   *   the strike, a filtered noise burst lasting a few hundredths of a second;
+   *   the collapse of brightness immediately after it, which is what makes a
+   *     string sound struck rather than blown;
+   *   and the unison, since a note is two or three strings tuned a hair apart,
+   *     and the slow beating between them is the shimmer one oscillator can
+   *     never fake.
+   *
+   * It will not be mistaken for a Steinway. It is unmistakably not the synth,
+   * which is the point of offering the choice.
+   */
+  const PIANO_PARTIALS = [0, 1, 0.55, 0.33, 0.19, 0.11, 0.065, 0.04, 0.024, 0.015, 0.009];
+  let pianoWave = null;
+  let hammerNoise = null;
+
+  function wave() {
+    if (!pianoWave) {
+      const imag = Float32Array.from(PIANO_PARTIALS);
+      pianoWave = ctx.createPeriodicWave(new Float32Array(imag.length), imag);
+    }
+    return pianoWave;
+  }
+
+  function noise() {
+    if (!hammerNoise) {
+      const n = Math.floor(ctx.sampleRate * 0.12);
+      hammerNoise = ctx.createBuffer(1, n, ctx.sampleRate);
+      const data = hammerNoise.getChannelData(0);
+      for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
+    }
+    return hammerNoise;
+  }
+
+  /* No plateau to hold: a string starts dying the moment the hammer leaves it.
+   * Low strings are longer and heavier and ring on well after the top of the
+   * keyboard has gone, so the tail is scaled by pitch — and capped by the time
+   * available, which is how the tempo keeps one chord out of the next. */
+  function shapePiano(param, t0, dur, gain, freq) {
+    const natural = 5.4 - Math.log2(Math.max(freq, 27.5) / 55) * 0.6;
+    const tail = Math.max(0.25, Math.min(dur, natural));
+    const knee = Math.min(0.3, tail * 0.24);
+
+    /* Three stages rather than two. A single exponential from the strike to
+     * silence is mathematically a decay and musically a disappearance — by a
+     * third of the way through the bar there is nothing left to hear the next
+     * chord against. The middle stage is the part you actually listen to. */
+    param.setValueAtTime(0.0001, t0);
+    param.linearRampToValueAtTime(gain, t0 + 0.004);
+    param.exponentialRampToValueAtTime(gain * 0.45, t0 + knee);
+    param.exponentialRampToValueAtTime(gain * 0.06, t0 + tail * 0.8);
+    param.exponentialRampToValueAtTime(0.0001, t0 + tail);
+    return t0 + tail;
+  }
+
+  function tonePiano(freq, t0, dur, gain) {
+    const g = ctx.createGain();
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(Math.min(11000, freq * 13), t0);
+    lp.frequency.exponentialRampToValueAtTime(
+      Math.max(700, freq * 3.2), t0 + Math.min(0.7, dur)
+    );
+
+    const sources = [];
+    [-2.5, 2.5].forEach((cents) => {
+      const o = ctx.createOscillator();
+      o.setPeriodicWave(wave());
+      o.frequency.value = freq;
+      o.detune.value = cents;
+      o.connect(lp);
+      sources.push(o);
+    });
+
+    const hit = ctx.createBufferSource();
+    hit.buffer = noise();
+    const band = ctx.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.value = Math.min(5200, freq * 6);
+    band.Q.value = 0.7;
+    const hitGain = ctx.createGain();
+    hitGain.gain.setValueAtTime(gain * 0.45, t0);
+    hitGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+    hit.connect(band);
+    band.connect(hitGain);
+    hitGain.connect(master);
+    sources.push(hit);
+
+    // Two oscillators sum into one gain, and a struck note spends far less
+    // time at its peak than a held one. Both are accounted for here so the
+    // toggle changes the instrument and not the volume.
+    const endsAt = shapePiano(g.gain, t0, dur, gain * 0.8, freq);
+    lp.connect(g);
+    g.connect(master);
+
+    sources.forEach((s) => { s.start(t0); s.stop(endsAt + 0.06); });
+    register(sources, g);
+  }
+
+  let instrument = 'synth';
+
+  function tone(freq, t0, dur, gain, sustained) {
+    if (instrument === 'piano') tonePiano(freq, t0, dur, gain);
+    else toneSynth(freq, t0, dur, gain, sustained);
   }
 
   /* Cut every sounding and scheduled note, with a short fade so stopping does
@@ -224,13 +340,12 @@ const Sound = (() => {
   function silence() {
     if (!ctx) return;
     const t = ctx.currentTime;
-    live.forEach(({ osc, shimmer, g }) => {
+    live.forEach(({ sources, g }) => {
       try {
         g.gain.cancelScheduledValues(t);
         g.gain.setValueAtTime(g.gain.value, t);
         g.gain.linearRampToValueAtTime(0.0001, t + 0.04);
-        osc.stop(t + 0.05);
-        shimmer.stop(t + 0.05);
+        sources.forEach((s) => s.stop(t + 0.05));
       } catch (e) {
         // Already stopped — nothing to cut.
       }
@@ -292,6 +407,8 @@ const Sound = (() => {
     probe,
     isMuted: () => muted,
     setMuted: (v) => { muted = v; },
+    instrument: () => instrument,
+    setInstrument: (v) => { instrument = v === 'piano' ? 'piano' : 'synth'; },
     /* Called once if the browser refuses to start audio, so the UI can say so
      * instead of just staying silent. */
     onBlocked: (fn) => { blockedHandler = fn; },

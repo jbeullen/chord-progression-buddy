@@ -84,6 +84,21 @@ when you click one. It reads in beats per minute counted one chord to the bar
 of 4/4, so the default of 120 BPM holds a chord for two seconds. It can be
 dragged during playback and takes effect from the next chord.
 
+## Synth or piano
+
+A switch in the top bar picks which one plays, everywhere on the page. There
+are no samples — the whole thing has to run from a file on disk — so the piano
+is argued from what a piano does rather than recorded from one: a filtered
+noise burst for the hammer, brightness that collapses in the first fraction of
+a second, and two oscillators a couple of cents apart, because a note is
+several strings tuned a hair from each other and the beating between them is
+the part a single oscillator cannot fake.
+
+The difference is not only timbre. The synth holds a chord flat for as long as
+it is given, which makes voice leading easy to follow; the piano starts dying
+the moment it is struck, and low notes ring longer than high ones. The tempo
+caps the tail either way, so one chord never bleeds into the next.
+
 ## What Theory mode shows
 
 **The diatonic chords** — the main event. Seven cards, each with its Roman
