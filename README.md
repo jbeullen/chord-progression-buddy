@@ -88,16 +88,32 @@ dragged during playback and takes effect from the next chord.
 
 A switch in the top bar picks which one plays, everywhere on the page. There
 are no samples — the whole thing has to run from a file on disk — so the piano
-is argued from what a piano does rather than recorded from one: a filtered
-noise burst for the hammer, brightness that collapses in the first fraction of
-a second, and two oscillators a couple of cents apart, because a note is
-several strings tuned a hair from each other and the beating between them is
-the part a single oscillator cannot fake.
+is argued from what a piano does rather than recorded from one, and it is built
+one partial at a time, because the things that separate a struck string from a
+synthesiser are things no single waveform can express:
+
+- **A piano string is stiff, so it is not harmonic.** Its partials sit
+  progressively sharp of the whole-number multiples, by `f·n·√(1 + Bn²)`. The
+  measured stretch here runs from 0.02% at the fundamental to about 3.5% by the
+  thirteenth partial in the middle of the keyboard, and further in the bass
+  where the strings are short for their pitch. Every periodic waveform is by
+  definition exactly harmonic, so this is the part that cannot be faked with a
+  wavetable — and it is a good share of why a piano sounds like a piano.
+- **Each partial decays at its own rate**, the high ones fastest, which is why
+  a note is bright for a moment and mellow for a long time after.
+- **The hammer strikes about an eighth of the way along the string**, and
+  cannot excite a partial with a node at that point. The eighth is missing.
+- The felt is soft and a soundboard is not a tweeter, so the top of the
+  spectrum is rolled off steeply rather than merely thinned.
+- On top of that, a broadband thump for the hammer, and a second detuned copy
+  of the lowest partials, since a note is two or three strings tuned a hair
+  apart and the beating between them is a sound no single string makes.
 
 The difference is not only timbre. The synth holds a chord flat for as long as
-it is given, which makes voice leading easy to follow; the piano starts dying
-the moment it is struck, and low notes ring longer than high ones. The tempo
-caps the tail either way, so one chord never bleeds into the next.
+it is given; the piano decays at the string's own rate and is damped when the
+bar runs out, which is what releasing a key does. Bass notes ring on where
+treble notes have already gone — by the end of a bar at 120 BPM a low note has
+lost around 17 dB and a high one around 40.
 
 ## What Theory mode shows
 

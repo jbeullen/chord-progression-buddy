@@ -1,7 +1,11 @@
 /*
- * audio.js — a small Web Audio synth, so every chord on the page is audible.
- * No samples, no libraries: two detuned oscillators per note through a shared
- * compressor, which is enough to hear voice leading.
+ * audio.js — the sound, so every chord on the page is audible. No samples and
+ * no libraries: the whole app has to run from a file on disk.
+ *
+ * Two instruments. The synth is two detuned oscillators per note through a
+ * shared filter, which holds a chord flat and makes voice leading easy to
+ * follow. The piano is built one partial at a time, further down, and is a
+ * struck string rather than a held one.
  */
 const Sound = (() => {
   let ctx = null;
@@ -229,29 +233,35 @@ const Sound = (() => {
    * The same chords, struck rather than held. There are no samples here and
    * there is no room for any — the whole app is meant to run from a file on
    * disk — so this is a piano argued from what a piano does rather than
-   * recorded from one. Three things carry most of it:
+   * recorded from one. It is built one partial at a time, because the three
+   * things that separate a struck string from a synthesiser are all things a
+   * single oscillator cannot express:
    *
-   *   the strike, a filtered noise burst lasting a few hundredths of a second;
-   *   the collapse of brightness immediately after it, which is what makes a
-   *     string sound struck rather than blown;
-   *   and the unison, since a note is two or three strings tuned a hair apart,
-   *     and the slow beating between them is the shimmer one oscillator can
-   *     never fake.
+   * A piano string is stiff, so it is *not* harmonic. Its partials sit
+   * progressively sharp of the whole-number multiples, by f·n·√(1 + Bn²).
+   * B is small — a few ten-thousandths — but it is the reason a piano sounds
+   * like a piano and an organ does not, and no single waveform can carry it,
+   * since every periodic wave is by definition exactly harmonic.
    *
-   * It will not be mistaken for a Steinway. It is unmistakably not the synth,
-   * which is the point of offering the choice.
+   * Each partial decays at its own rate, the high ones fastest. That is why a
+   * piano note is bright for a moment and mellow for a long time afterwards.
+   *
+   * The hammer strikes about an eighth of the way along the string, which
+   * cannot excite a partial with a node at that point — so the eighth is
+   * missing, and its neighbours are weakened. That notch is audible.
+   *
+   * On top of that: a broadband thump for the hammer itself, and a second
+   * detuned copy of the lowest partials, since a note is two or three strings
+   * tuned a hair apart and the slow beating between them is a sound no single
+   * string makes.
    */
-  const PIANO_PARTIALS = [0, 1, 0.55, 0.33, 0.19, 0.11, 0.065, 0.04, 0.024, 0.015, 0.009];
-  let pianoWave = null;
+  const MAX_PARTIALS = 14;
+  const STRIKE_POINT = 1 / 8; // where the hammer meets the string
+  /* A dozen partials starting together add up to far more than one oscillator
+   * did, so the per-note level is scaled to land beside the synth. Tuned by
+   * measuring the output, not by ear. */
+  const PIANO_LEVEL = 1.35;
   let hammerNoise = null;
-
-  function wave() {
-    if (!pianoWave) {
-      const imag = Float32Array.from(PIANO_PARTIALS);
-      pianoWave = ctx.createPeriodicWave(new Float32Array(imag.length), imag);
-    }
-    return pianoWave;
-  }
 
   function noise() {
     if (!hammerNoise) {
@@ -263,69 +273,101 @@ const Sound = (() => {
     return hammerNoise;
   }
 
-  /* No plateau to hold: a string starts dying the moment the hammer leaves it.
-   * Low strings are longer and heavier and ring on well after the top of the
-   * keyboard has gone, so the tail is scaled by pitch — and capped by the time
-   * available, which is how the tempo keeps one chord out of the next. */
-  function shapePiano(param, t0, dur, gain, freq) {
-    const natural = 5.4 - Math.log2(Math.max(freq, 27.5) / 55) * 0.6;
-    const tail = Math.max(0.25, Math.min(dur, natural));
-    const knee = Math.min(0.3, tail * 0.24);
-
-    /* Three stages rather than two. A single exponential from the strike to
-     * silence is mathematically a decay and musically a disappearance — by a
-     * third of the way through the bar there is nothing left to hear the next
-     * chord against. The middle stage is the part you actually listen to. */
-    param.setValueAtTime(0.0001, t0);
-    param.linearRampToValueAtTime(gain, t0 + 0.004);
-    param.exponentialRampToValueAtTime(gain * 0.45, t0 + knee);
-    param.exponentialRampToValueAtTime(gain * 0.06, t0 + tail * 0.8);
-    param.exponentialRampToValueAtTime(0.0001, t0 + tail);
-    return t0 + tail;
-  }
+  /* Stiffness rises steeply towards the bass, where the strings are short for
+   * their pitch and wound with copper to make up the difference. */
+  const inharmonicity = (freq) => 0.00007 + 0.0022 / (1 + Math.pow(freq / 100, 1.7));
 
   function tonePiano(freq, t0, dur, gain) {
-    const g = ctx.createGain();
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.setValueAtTime(Math.min(11000, freq * 13), t0);
-    lp.frequency.exponentialRampToValueAtTime(
-      Math.max(700, freq * 3.2), t0 + Math.min(0.7, dur)
-    );
-
     const sources = [];
-    [-2.5, 2.5].forEach((cents) => {
+    const out = ctx.createGain();
+    out.gain.value = 1;
+    out.connect(master);
+
+    const B = inharmonicity(freq);
+    const ceiling = Math.min(ctx.sampleRate * 0.45, 15000);
+    /* Low strings are long and heavy and ring on for half a minute; a note at
+     * the top of the keyboard is gone in under a second. That spread is one of
+     * the plainest things about a piano, and the first version of this had it
+     * far too flat — barely two to one across the whole range. */
+    const natural = Math.max(0.6, 8.5 - Math.log2(Math.max(freq, 27.5) / 55) * 1.35);
+
+    const partial = (n, cents, level) => {
+      const f = n * freq * Math.sqrt(1 + B * n * n);
+      if (f > ceiling) return false;
+
+      // The strike point cannot excite a partial that has a node there.
+      const comb = Math.abs(Math.sin(Math.PI * n * STRIKE_POINT));
+      /* A felt hammer is soft and a soundboard is not a tweeter, so the top of
+       * the spectrum is rolled off rather than merely thinned. This has to be
+       * steep: the strike comb repeats every eighth partial, and a gentle
+       * rolloff hands the ninth to the thirteenth their energy back as a
+       * cluster around 3 kHz, which is both where the ear is most sensitive and
+       * why the first attempt sounded glassy rather than bright. */
+      const roll = 1 / (1 + Math.pow(f / 1600, 2.6));
+      const amp = gain * PIANO_LEVEL * level * comb * roll / Math.pow(n, 1.15);
+      if (amp < gain * 0.002) return true; // too quiet to be worth a node
+
+      /* Upper partials shed their energy fastest, into the soundboard and the
+       * air. This ratio is most of the piano's changing colour. t60 is the time
+       * this partial would take to fall 60 dB if left alone. */
+      const t60 = Math.max(0.12, natural / (1 + (n - 1) * 0.55));
+      const attack = 0.0015 + 0.0035 / n;
+
+      /* Decay at the string's own rate for as long as there is room, then damp
+       * what is left. Capping the rate instead — forcing the partial to reach
+       * silence exactly when the bar ends — is what made the first attempt
+       * vanish: a fundamental that has to lose 60 dB inside two seconds is
+       * inaudible long before the next chord arrives, where a real one has
+       * lost about 20 and is still singing. This is also just what happens on
+       * the instrument, where the note rings on until the key is released and
+       * the damper drops. */
+      const ring = Math.min(t60, Math.max(0.1, dur));
+      const left = Math.max(0.00012, amp * Math.pow(0.001, ring / t60));
+      const damped = left > 0.0002;
+      const ends = t0 + ring + (damped ? 0.09 : 0);
+
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(amp, t0 + attack);
+      g.gain.exponentialRampToValueAtTime(left, t0 + ring);
+      if (damped) g.gain.exponentialRampToValueAtTime(0.0001, ends);
+
       const o = ctx.createOscillator();
-      o.setPeriodicWave(wave());
-      o.frequency.value = freq;
-      o.detune.value = cents;
-      o.connect(lp);
+      o.type = 'sine';
+      o.frequency.value = f;
+      if (cents) o.detune.value = cents;
+      o.connect(g);
+      g.connect(out);
+      o.start(t0);
+      o.stop(ends + 0.03);
       sources.push(o);
-    });
+      return true;
+    };
+
+    for (let n = 1; n <= MAX_PARTIALS; n++) {
+      if (!partial(n, 0, 1)) break;
+    }
+    // The unison, on the partials that carry the weight of the note.
+    partial(1, -1.6, 0.7);
+    partial(2, 2.1, 0.7);
 
     const hit = ctx.createBufferSource();
     hit.buffer = noise();
     const band = ctx.createBiquadFilter();
     band.type = 'bandpass';
-    band.frequency.value = Math.min(5200, freq * 6);
-    band.Q.value = 0.7;
+    band.frequency.value = Math.min(6000, Math.max(900, freq * 7));
+    band.Q.value = 0.6;
     const hitGain = ctx.createGain();
-    hitGain.gain.setValueAtTime(gain * 0.45, t0);
-    hitGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+    hitGain.gain.setValueAtTime(gain * 0.55, t0);
+    hitGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.035);
     hit.connect(band);
     band.connect(hitGain);
-    hitGain.connect(master);
+    hitGain.connect(out);
+    hit.start(t0);
+    hit.stop(t0 + 0.1);
     sources.push(hit);
 
-    // Two oscillators sum into one gain, and a struck note spends far less
-    // time at its peak than a held one. Both are accounted for here so the
-    // toggle changes the instrument and not the volume.
-    const endsAt = shapePiano(g.gain, t0, dur, gain * 0.8, freq);
-    lp.connect(g);
-    g.connect(master);
-
-    sources.forEach((s) => { s.start(t0); s.stop(endsAt + 0.06); });
-    register(sources, g);
+    register(sources, out);
   }
 
   let instrument = 'synth';
