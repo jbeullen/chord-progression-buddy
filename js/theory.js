@@ -490,7 +490,8 @@ const Theory = (() => {
         key: 'approach.twoFive',
         chord: sec.two,
         label: sec.two.roman,
-        params: { two: sec.two.symbol7, dom: sec.dominant.symbol7, chord: chord.symbol }
+        params: { two: sec.two.symbol7, dom: sec.dominant.symbol7, chord: chord.symbol },
+        chain: [sec.two, sec.dominant, chord]
       });
       approaches.push({
         key: 'approach.tritone',
@@ -532,14 +533,17 @@ const Theory = (() => {
 
     // Departures — where this chord naturally wants to go inside the key.
     const departures = [];
-    const push = (targetDeg, k, params) => {
+    const push = (targetDeg, k, params, chain) => {
       const t = key.diatonic[targetDeg];
-      departures.push({ chord: t, label: t.roman, key: k, params: params || {} });
+      departures.push({ chord: t, label: t.roman, key: k, params: params || {}, chain: chain || null });
     };
     if (chord.fn === 'tonic') {
       push(3, 'depart.tonic.predominant');
       push(4, 'depart.tonic.dominant');
-      push(1, 'depart.tonic.jazz', { roman: chord.roman });
+      /* Spelled out from the actual chords rather than a fixed "ii – V – I",
+       * because in a minor key the route reads i – iiø – v – i. */
+      const jazz = [chord, key.diatonic[1], key.diatonic[4], key.diatonic[0]];
+      push(1, 'depart.tonic.jazz', { route: jazz.map((c) => c.roman).join(' – ') }, jazz);
     } else if (chord.fn === 'predominant') {
       push(4, 'depart.predominant.dominant');
       push(0, 'depart.predominant.tonic');
@@ -579,6 +583,14 @@ const Theory = (() => {
     // Role in the relative key.
     const relMatch = key.relative.diatonic.find((c) => pc(c.root) === pc(chord.root));
 
+    /* A minor relative key borrows a leading tone for its dominant; a major one
+     * already has it. Either way the sentence names a three-chord route, so it
+     * hands over all three to be played. */
+    const relDom = key.relative.mode === 'minor'
+      ? chordOn(fifthAbove(key.relative.tonic), 'maj', 'dom7')
+      : Object.assign({}, key.relative.diatonic[4]);
+    relDom.display = relDom.symbol7;
+
     return {
       approaches,
       departures,
@@ -590,13 +602,12 @@ const Theory = (() => {
             roman: relMatch.roman,
             fn: relMatch.fn,
             key: 'detail.relative.text',
+            chain: [chord, relDom, key.relative.diatonic[0]],
             params: {
               chord: chord.symbol,
               homeRoman: chord.roman,
               relRoman: relMatch.roman,
-              dom: key.relative.mode === 'minor'
-                ? chordOn(fifthAbove(key.relative.tonic), 'maj', 'dom7').symbol7
-                : key.relative.diatonic[4].symbol7,
+              dom: relDom.symbol7,
               target: key.relative.diatonic[0].symbol
             }
           }

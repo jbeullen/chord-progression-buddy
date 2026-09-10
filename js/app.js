@@ -209,8 +209,10 @@
         ${chain(chords)}
       </li>`;
 
-    const approaches = ctx.approaches.map((a) => item(a, [a.chord, chord])).join('');
-    const departures = ctx.departures.map((d) => item(d, [chord, d.chord])).join('');
+    /* Most entries compare two chords, but where the sentence spells out a
+     * longer route the theory layer hands over the whole thing to play. */
+    const approaches = ctx.approaches.map((a) => item(a, a.chain || [a.chord, chord])).join('');
+    const departures = ctx.departures.map((d) => item(d, d.chain || [chord, d.chord])).join('');
 
     const extras = [];
     if (ctx.interchange) {
@@ -236,6 +238,7 @@
       extras.push(`<div class="note-card">
         <h4>${t('detail.relative', { key: keyName(key.relative) })}</h4>
         <p>${say(ctx.relative)}</p>
+        ${chain(ctx.relative.chain)}
         <p class="mini-fact">${t('detail.relative.fact', {
           chord: chord.symbol,
           homeRoman: chord.roman,

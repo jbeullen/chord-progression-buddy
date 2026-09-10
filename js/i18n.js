@@ -91,7 +91,7 @@ const I18N = (() => {
       'approach.backdoor.title': 'Backdoor',
       'depart.tonic.predominant': 'Move out to the pre-dominant side and start a phrase.',
       'depart.tonic.dominant': 'Straight to the dominant for a short, punchy turnaround.',
-      'depart.tonic.jazz': 'The jazz route: {roman} – ii – V – I.',
+      'depart.tonic.jazz': 'The jazz route: {route}.',
       'depart.predominant.dominant': 'Pre-dominant → dominant. This is the move the whole system is built around.',
       'depart.predominant.tonic': 'Fall back to the tonic for a plagal, unresolved feel.',
       'depart.predominant.leadingTone': 'Up to the leading-tone chord for a tighter, more chromatic push.',
@@ -103,7 +103,7 @@ const I18N = (() => {
       'detail.asDominant': 'Use it as a dominant',
       'detail.asDominant.text': 'Make it {dom} and it stops being {roman} — it becomes the dominant of {target} ({targetRoman}) and pulls there instead.',
       'detail.relative': 'Its job in {key}',
-      'detail.relative.text': '{chord} is {homeRoman} here and {relRoman} in {key}. Land on it, follow with {dom} → {target}, and the key has changed underneath you.',
+      'detail.relative.text': '{chord} is {homeRoman} here and {relRoman} in {relKey}. Land on it, follow with {dom} → {target}, and the key has changed underneath you.',
       'detail.relative.fact': '{chord}: <b>{homeRoman}</b> ({homeFn}) in {key} · <b>{relRoman}</b> ({relFn}) in {relKey}',
 
       // ------------------------------------------------------ relative key ---
@@ -331,7 +331,7 @@ const I18N = (() => {
       'approach.backdoor.title': 'Achterdeur',
       'depart.tonic.predominant': 'Stap naar de subdominantkant en begin een zin.',
       'depart.tonic.dominant': 'Direct naar de dominant voor een korte, stevige turnaround.',
-      'depart.tonic.jazz': 'De jazzroute: {roman} – ii – V – I.',
+      'depart.tonic.jazz': 'De jazzroute: {route}.',
       'depart.predominant.dominant': 'Subdominant → dominant. Dit is de beweging waar het hele systeem om draait.',
       'depart.predominant.tonic': 'Terug naar de tonica voor een plagaal, onopgelost gevoel.',
       'depart.predominant.leadingTone': 'Omhoog naar het leidtoonakkoord voor een strakkere, chromatische duw.',
@@ -343,7 +343,7 @@ const I18N = (() => {
       'detail.asDominant': 'Gebruik het als dominant',
       'detail.asDominant.text': 'Maak er {dom} van en het is geen {roman} meer — het wordt de dominant van {target} ({targetRoman}) en trekt daarheen.',
       'detail.relative': 'De rol in {key}',
-      'detail.relative.text': '{chord} is hier {homeRoman} en {relRoman} in {key}. Land erop, ga verder met {dom} → {target}, en de toonsoort is onder je voeten veranderd.',
+      'detail.relative.text': '{chord} is hier {homeRoman} en {relRoman} in {relKey}. Land erop, ga verder met {dom} → {target}, en de toonsoort is onder je voeten veranderd.',
       'detail.relative.fact': '{chord}: <b>{homeRoman}</b> ({homeFn}) in {key} · <b>{relRoman}</b> ({relFn}) in {relKey}',
 
       'relative.heading': 'Parallelle toonsoort',

@@ -208,6 +208,54 @@ const emitted = new Set();
 const unknown = [...emitted].filter((key) => I18N.t(key) === key);
 is(unknown.length, 0, 'every key the theory layer emits is translated: ' + unknown.join(', '));
 
+// ------------------- a sentence must not name a chord its button won't play ---
+/* Params holding a chord symbol, as opposed to a note, numeral or key name.
+ * "approach.tritone" is the one place a chord is named as a comparison rather
+ * than as something to play ("same tritone as G7"), so its {dom} is exempt. */
+const CHORD_PARAMS = ['two', 'dom', 'chord', 'four', 'backdoor', 'swap', 'target', 'pivot'];
+const unplayed = [];
+
+function namedChordsArePlayed(where, entryKey, params, chords, exempt) {
+  const played = new Set();
+  chords.forEach((c) => c && [c.symbol, c.symbol7, c.display].forEach((s) => s && played.add(s)));
+  CHORD_PARAMS.forEach((p) => {
+    if (!params || !params[p] || (exempt && exempt.includes(p))) return;
+    if (!played.has(params[p])) unplayed.push(`${where} ${entryKey}: says ${params[p]}, plays none of it`);
+  });
+}
+
+['C', 'E' + T.FLAT, 'F' + T.SHARP, 'B'].forEach((tonic) => {
+  ['major', 'minor'].forEach((mode) => {
+    const k = T.buildKey(T.parseNote(tonic), mode);
+    const where = `[${tonic} ${mode}]`;
+    k.diatonic.forEach((c) => {
+      const ctx = T.chordContext(k, c);
+      ctx.approaches.forEach((a) => namedChordsArePlayed(where, a.key, a.params,
+        a.chain || [a.chord, c], a.key === 'approach.tritone' ? ['dom'] : null));
+      ctx.departures.forEach((d) => namedChordsArePlayed(where, d.key, d.params, d.chain || [c, d.chord]));
+      if (ctx.interchange) {
+        namedChordsArePlayed(where, ctx.interchange.key, ctx.interchange.params,
+          [c, ctx.interchange.chord, k.diatonic[0]]);
+      }
+      if (ctx.relative) {
+        namedChordsArePlayed(where, ctx.relative.key, ctx.relative.params, ctx.relative.chain);
+      }
+    });
+    const rt = T.relativeRoutes(k);
+    [...rt.into, ...rt.out].forEach((r) => namedChordsArePlayed(where, r.key, r.params, r.chords));
+  });
+});
+is(unplayed.length, 0, 'every chord a sentence names is in the chain it plays:\n    ' + unplayed.join('\n    '));
+
+// The jazz route is four chords, and it spells itself out of the key it is in.
+const jazz = (mode) => {
+  const k = T.buildKey(T.parseNote('C'), mode);
+  return T.chordContext(k, k.diatonic[0]).departures.find((d) => d.key === 'depart.tonic.jazz');
+};
+is(jazz('major').chain.length, 4, 'the jazz route plays four chords');
+is(jazz('major').params.route, 'I – ii – V – I', 'the jazz route reads I – ii – V – I in major');
+is(jazz('minor').params.route, 'i – ii° – v – i', 'the jazz route spells itself correctly in minor');
+
 // ------------------------------------------------------------------ done ---
 if (failures.length) {
   console.error(`\n${failures.length} failing:\n\n  ${failures.join('\n\n  ')}\n`);
