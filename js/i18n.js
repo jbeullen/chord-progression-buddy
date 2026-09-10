@@ -6,10 +6,14 @@
  * filled with chord symbols and note names, which are the same in both
  * languages.
  *
- * A note on the Dutch: "parallelle toonaard" is the relative key (C majeur /
- * a mineur) and "gelijknamige toonaard" is the parallel one (C majeur /
- * c mineur). That is the opposite of the English words, and getting it the
- * other way round would say something untrue.
+ * A note on the Dutch. Two different pairs of keys need two different words,
+ * and Dutch has more than one convention for them. This app follows the
+ * English sense: "parallelle mineur" is C majeur / c mineur — same tonic,
+ * other mode — and "relatieve toonaard" is C majeur / a mineur — same notes,
+ * other centre. The older schoolbook usage puts "parallel" on the second pair
+ * and "gelijknamig" on the first, so whichever way round it goes, both words
+ * have to move together: one word meaning both pairs is worse than either
+ * convention.
  */
 const I18N = (() => {
   const STRINGS = {
@@ -294,7 +298,7 @@ const I18N = (() => {
 
       'theory.title': 'De akkoorden in {key}',
       'theory.scale': 'Toonladder:',
-      'theory.relativeIs': '{key} is de parallelle toonaard',
+      'theory.relativeIs': '{key} is de relatieve toonaard',
       'legend.tonic': 'Tonica — thuis',
       'legend.predominant': 'Subdominant — zet de cadens op',
       'legend.dominant': 'Dominant — wil oplossen',
@@ -333,7 +337,7 @@ const I18N = (() => {
       'approach.authentic.title': 'Authentieke cadens',
       'approach.plagal': '{four} → {chord}. Het "amen" — rustgevend in plaats van afsluitend.',
       'approach.plagal.title': 'Plagale cadens',
-      'approach.backdoor': '{backdoor} → {chord}. Geleend uit de gelijknamige mineur, en het landt van opzij.',
+      'approach.backdoor': '{backdoor} → {chord}. Geleend uit de parallelle mineur, en het landt van opzij.',
       'approach.backdoor.title': 'Achterdeur',
       'depart.tonic.predominant': 'Stap naar de subdominantkant en begin een zin.',
       'depart.tonic.dominant': 'Direct naar de dominant voor een korte, stevige turnaround.',
@@ -342,7 +346,7 @@ const I18N = (() => {
       'depart.predominant.tonic': 'Terug naar de tonica voor een plagaal, onopgelost gevoel.',
       'depart.predominant.leadingTone': 'Omhoog naar het leidtoonakkoord voor een strakkere, chromatische duw.',
       'depart.dominant.resolve': 'Oplossen. De leidtoon stijgt, de septiem daalt.',
-      'depart.dominant.deceptive': 'Bedrieglijke cadens — het oor verwacht de tonica en krijgt de parallelle mineur.',
+      'depart.dominant.deceptive': 'Bedrieglijke cadens — het oor verwacht de tonica en krijgt de relatieve mineur.',
       'depart.dominant.again': 'Terug naar de subdominant en nog een ronde.',
       'detail.interchange': 'Modale uitwisseling',
       'detail.interchange.text': 'Vervang {chord} door {swap} ({roman}, geleend uit {tonic} {parallelMode}) om dezelfde plek een andere kleur te geven zonder de melodie eronder te veranderen.',
@@ -352,7 +356,7 @@ const I18N = (() => {
       'detail.relative.text': '{chord} is hier {homeRoman} en {relRoman} in {relKey}. Land erop, ga verder met {dom} → {target}, en de toonaard is onder je voeten veranderd.',
       'detail.relative.fact': '{chord}: <b>{homeRoman}</b> ({homeFn}) in {key} · <b>{relRoman}</b> ({relFn}) in {relKey}',
 
-      'relative.heading': 'Parallelle toonaard',
+      'relative.heading': 'Relatieve toonaard',
       'relative.thin': '— {key}',
       'relative.sub': 'Dezelfde zeven noten als {key}, ander zwaartepunt. {short} is hier <b>{homeRoman}</b> en daar <b>{relRoman}</b>.',
       'relative.pivots': 'Elk akkoord is een scharnier',
@@ -388,10 +392,10 @@ const I18N = (() => {
       'borrowed.heading': 'Modale uitwisseling',
       'borrowed.sub': 'Akkoorden geleend uit {tonic} {parallelMode} — dezelfde grondtoon, ander toongeslacht. Ze houden de toonaard vast maar veranderen de kleur.',
       'borrowed.replaces': ' · in plaats van {chord} ({roman})',
-      'source.parallel.major': 'Gelijknamige majeur',
-      'source.parallel.minor': 'Gelijknamige mineur',
+      'source.parallel.major': 'Parallelle majeur',
+      'source.parallel.minor': 'Parallelle mineur',
       'source.chromatic': 'Chromatisch',
-      'borrow.major.0': 'De tonica uit de gelijknamige mineur. Donker, en een sterke manier om naar mineur te draaien.',
+      'borrow.major.0': 'De tonica uit de parallelle mineur. Donker, en een sterke manier om naar mineur te draaien.',
       'borrow.major.1': 'Half-verminderde subdominant. Duw hem meteen naar V voor directe mineurkleur.',
       'borrow.major.2': 'Verlaagde mediant. Tilt een majeurprogressie opzij: I – ♭III – IV.',
       'borrow.major.3': 'De beroemde. IV → iv → I is de meest gebruikte leenbeweging in pop.',
@@ -417,8 +421,8 @@ const I18N = (() => {
       'prog.major.twoFiveOne.note': 'De jazzcadens, met septiemen.',
       'prog.major.secondaryLift.name': 'Tussendominant-lift',
       'prog.major.secondaryLift.note': 'V7/ii trekt de ii er hard in.',
-      'prog.major.toRelative.name': 'Naar de parallelle mineur',
-      'prog.major.toRelative.note': 'V7/vi is de deur naar de parallelle toonaard.',
+      'prog.major.toRelative.name': 'Naar de relatieve mineur',
+      'prog.major.toRelative.note': 'V7/vi is de deur naar de relatieve toonaard.',
       'prog.major.borrowedFour.name': 'Geleende iv',
       'prog.major.borrowedFour.note': 'De klassieke modale uitwisseling.',
       'prog.major.backdoor.name': 'Achterdeur',
@@ -433,8 +437,8 @@ const I18N = (() => {
       'prog.minor.twoFiveOne.note': 'De mineur jazzcadens.',
       'prog.minor.andalusian.name': 'Andalusisch',
       'prog.minor.andalusian.note': 'i – VII – VI – V, flamencoklassieker.',
-      'prog.minor.toRelative.name': 'Naar de parallelle majeur',
-      'prog.minor.toRelative.note': 'V7/III opent de parallelle majeur.',
+      'prog.minor.toRelative.name': 'Naar de relatieve majeur',
+      'prog.minor.toRelative.note': 'V7/III opent de relatieve majeur.',
       'prog.minor.dorian.name': 'Dorische groove',
       'prog.minor.dorian.note': 'De verhoogde sext houdt het weg van tragisch.',
       'prog.minor.picardy.name': 'Picardisch slot',

@@ -22,9 +22,13 @@ opens in Dutch; the toggle overrides that and the choice rides in the URL
 user-facing prose: `theory.js` emits keys and values, `app.js` renders them.
 `npm test` fails if either language is missing a key the theory layer emits.
 
-One translation worth knowing about: in Dutch, *parallelle toonaard* is the
-**relative** key (C majeur / a mineur) and *gelijknamige toonaard* is the
-**parallel** one (C majeur / c mineur) — the opposite of the English words.
+One translation worth knowing about: Dutch has more than one convention for
+naming the two pairs of related keys, and this app follows the English sense —
+*parallelle mineur* is C majeur / c mineur (same tonic, other mode) and
+*relatieve toonaard* is C majeur / a mineur (same notes, other centre). Older
+Dutch schoolbooks swap the first word onto the second pair and call the first
+*gelijknamig*. Whichever way round it goes, both words have to move together:
+one word meaning both pairs is worse than either convention.
 
 ## Two modes
 
