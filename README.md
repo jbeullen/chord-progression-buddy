@@ -89,9 +89,15 @@ dragged during playback and takes effect from the next chord.
 A switch in the top bar picks which one plays, everywhere on the page.
 
 The piano is a real one: the **Salamander Grand Piano** — a recorded Yamaha C5
-by Alexander Holm, under [CC BY 3.0][ccby] — one sample every minor third
-across the range the app can play, so no note is pitch-shifted by more than a
-tone and a half.
+by Alexander Holm, under [CC BY 3.0][ccby] — one sample every minor third from
+D♯1 to C6, the range the app can play, so no note is pitch-shifted by more
+than a tone and a half.
+
+A **slash chord** puts its bass well below the chord rather than just underneath
+it. Dropped in a fourth under a doubled root, a C/G reads as a C chord with a
+low note added; given a clear minor seventh of air it reads as what it is. The
+chord itself does not move, so C and C/G stay in the same register when a
+progression goes between them.
 
 Nothing is fetched until somebody actually picks the piano, because the
 recordings are several megabytes and most visitors never will. While they are

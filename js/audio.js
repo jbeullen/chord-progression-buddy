@@ -448,6 +448,10 @@ const Sound = (() => {
    */
   const SAMPLE_PATH = 'audio/piano/';
   const SAMPLE_MIDI = {
+    /* Down to D♯1 because a slash bass drops well below the chord — the
+     * lowest note this app can ask for is a D♯1, and that is exactly where
+     * this stops. */
+    Ds1: 27, Fs1: 30, A1: 33,
     C2: 36, Ds2: 39, Fs2: 42, A2: 45,
     C3: 48, Ds3: 51, Fs3: 54, A3: 57,
     C4: 60, Ds4: 63, Fs4: 66, A4: 69,

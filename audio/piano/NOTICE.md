@@ -12,9 +12,14 @@ languages, alongside this file.
 
 ## What is here, and what is not
 
-One sample every minor third from C2 to C6 — the range this app can actually
+One sample every minor third from D♯1 to C6 — the range this app can actually
 play — taken from a single velocity layer. Notes in between are pitch-shifted
 by at most a tone and a half, which is what a set spaced this way is for.
+
+It reaches down to D♯1 because of slash chords: the bass of a C/G is dropped
+well below the chord so it is heard as a bass rather than fusing with the root,
+and D♯1 is the lowest note that can produce. A test asserts that nothing the
+voicer can play falls further than a tone and a half from a recording.
 
 The rest of the original set — the other velocity layers, the release samples,
 the top and bottom of the keyboard — is not included. It runs to over a hundred

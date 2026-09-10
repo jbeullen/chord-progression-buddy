@@ -248,6 +248,43 @@ is(T.parseChordSymbol('Cwhatever'), null, 'unreadable is null, not a guess');
 is(T.parseChordSymbol('C/H'), null, 'an unreadable bass makes the whole thing unreadable');
 is(T.parseChordSymbol(''), null, 'empty is not a chord');
 
+/* A slash bass has to be heard as the bass. Dropped in just under the chord it
+ * fuses with the root instead — a C/G whose G sits a fourth below a doubled C
+ * reads as a C chord with a low note added. */
+const voicing = (text) => T.voice(T.parseChordSymbol(text));
+const gap = (text) => { const v = voicing(text); return v[1] - v[0]; };
+
+is(voicing('C').join(' '), '48 52 55 60', 'a plain chord is voiced from its root');
+is(voicing('C/G')[0], 31, 'the G of a C/G goes well below the chord, not just under it');
+is(voicing('C/G').slice(1).join(' '), '48 52 55 60',
+  'and the chord itself does not move, so C and C/G stay in the same register');
+['C/G', 'C/E', 'Dm7/G', 'F/A', 'Am/C', 'G/B', 'Fmaj7/C', 'Bb/D'].forEach((s) => {
+  if (gap(s) < 10) failures.push(`${s}: only ${gap(s)} semitones between bass and chord`);
+  else passed++;
+});
+
+/* Everything the voicer can produce has to be within reach of a recording,
+ * or the sampled piano stretches one further than the set was made for. */
+const SAMPLED = [27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84];
+let outOfReach = [];
+['major', 'minor'].forEach((mode) => {
+  [...T.MAJOR_KEYS, ...T.MINOR_KEYS].forEach((tonic) => {
+    const k = T.buildKey(T.parseNote(tonic), mode);
+    const chords = [...k.diatonic, ...T.borrowedChords(k)];
+    // Plus the extreme a typed slash chord can reach in this key.
+    ['/B', '/E', '/F', '/G'].forEach((b) => {
+      const c = T.parseChordSymbol(k.diatonic[0].symbol + b);
+      if (c) chords.push(c);
+    });
+    chords.forEach((c) => T.voice(c).forEach((m) => {
+      const near = SAMPLED.reduce((a, s) => (Math.abs(s - m) < Math.abs(a - m) ? s : a), SAMPLED[0]);
+      if (Math.abs(near - m) > 1.5) outOfReach.push(`${c.symbol}: MIDI ${m}`);
+    }));
+  });
+});
+is(outOfReach.length, 0,
+  'every note the voicer can play is within a tone and a half of a sample: ' + outOfReach.slice(0, 5).join(', '));
+
 /* Numerals and numbers name both ends of a slash chord in their own system. */
 const slash = T.parseChordSymbol('C/G');
 is(T.romanFor(slash, CM.scaleNotes), 'I/V', 'a slash chord gets a slash numeral');

@@ -988,10 +988,18 @@ const Theory = (() => {
       out.push(m);
     });
     out.push(rootMidi + 12);
-    /* A slash chord is the same chord with someone else underneath, so the
-     * bass goes below everything rather than into the stack. */
+    /* A slash chord is the same chord with someone else underneath — and
+     * underneath has to mean properly underneath. Dropped in just below the
+     * stack, a C/G puts its G a fourth under the C and the ear hears a C chord
+     * with a low note added rather than a C over G, especially since the root
+     * is doubled an octave up as well. So the bass falls until there is at
+     * least a minor seventh of clear air above it. The chord itself does not
+     * move, which keeps C and C/G in the same register when a progression goes
+     * between them. */
     if (chord.bass && pc(chord.bass) !== rootPc) {
-      out.unshift(12 * baseOctave + pc(chord.bass));
+      let bassMidi = 12 * baseOctave + pc(chord.bass);
+      while (rootMidi - bassMidi < 10) bassMidi -= 12;
+      out.unshift(bassMidi);
     }
     return out;
   }
