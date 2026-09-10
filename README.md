@@ -22,8 +22,8 @@ opens in Dutch; the toggle overrides that and the choice rides in the URL
 user-facing prose: `theory.js` emits keys and values, `app.js` renders them.
 `npm test` fails if either language is missing a key the theory layer emits.
 
-One translation worth knowing about: in Dutch, *parallelle toonsoort* is the
-**relative** key (C majeur / a mineur) and *gelijknamige toonsoort* is the
+One translation worth knowing about: in Dutch, *parallelle toonaard* is the
+**relative** key (C majeur / a mineur) and *gelijknamige toonaard* is the
 **parallel** one (C majeur / c mineur) — the opposite of the English words.
 
 ## Two modes

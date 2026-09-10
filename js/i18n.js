@@ -6,8 +6,8 @@
  * filled with chord symbols and note names, which are the same in both
  * languages.
  *
- * A note on the Dutch: "parallelle toonsoort" is the relative key (C majeur /
- * a mineur) and "gelijknamige toonsoort" is the parallel one (C majeur /
+ * A note on the Dutch: "parallelle toonaard" is the relative key (C majeur /
+ * a mineur) and "gelijknamige toonaard" is the parallel one (C majeur /
  * c mineur). That is the opposite of the English words, and getting it the
  * other way round would say something untrue.
  */
@@ -273,7 +273,7 @@ const I18N = (() => {
       'toggle.unmute': 'Geluid aan',
       'toggle.muteTitle': 'Akkoorden niet laten klinken',
       'toggle.unmuteTitle': 'Akkoorden weer laten klinken',
-      'keybar.label': 'Toonsoort',
+      'keybar.label': 'Toonaard',
       'keybar.noAccidentals': 'geen kruisen of mollen',
       'keybar.sharps': '{n} {sym}’s',
       'keybar.sharpsOne': '{n} {sym}',
@@ -288,7 +288,7 @@ const I18N = (() => {
 
       'theory.title': 'De akkoorden in {key}',
       'theory.scale': 'Toonladder:',
-      'theory.relativeIs': '{key} is de parallelle toonsoort',
+      'theory.relativeIs': '{key} is de parallelle toonaard',
       'legend.tonic': 'Tonica — thuis',
       'legend.predominant': 'Subdominant — zet de cadens op',
       'legend.dominant': 'Dominant — wil oplossen',
@@ -343,10 +343,10 @@ const I18N = (() => {
       'detail.asDominant': 'Gebruik het als dominant',
       'detail.asDominant.text': 'Maak er {dom} van en het is geen {roman} meer — het wordt de dominant van {target} ({targetRoman}) en trekt daarheen.',
       'detail.relative': 'De rol in {key}',
-      'detail.relative.text': '{chord} is hier {homeRoman} en {relRoman} in {relKey}. Land erop, ga verder met {dom} → {target}, en de toonsoort is onder je voeten veranderd.',
+      'detail.relative.text': '{chord} is hier {homeRoman} en {relRoman} in {relKey}. Land erop, ga verder met {dom} → {target}, en de toonaard is onder je voeten veranderd.',
       'detail.relative.fact': '{chord}: <b>{homeRoman}</b> ({homeFn}) in {key} · <b>{relRoman}</b> ({relFn}) in {relKey}',
 
-      'relative.heading': 'Parallelle toonsoort',
+      'relative.heading': 'Parallelle toonaard',
       'relative.thin': '— {key}',
       'relative.sub': 'Dezelfde zeven noten als {key}, ander zwaartepunt. {short} is hier <b>{homeRoman}</b> en daar <b>{relRoman}</b>.',
       'relative.pivots': 'Elk akkoord is een scharnier',
@@ -357,7 +357,7 @@ const I18N = (() => {
       'route.into.dominant': 'Speel {dom} (dat is {roman} in {key}) en het oor landt op {target} als het nieuwe thuis.',
       'route.into.dominant.label': 'De directe weg — leen de dominant',
       'route.into.twoFive': 'Zet de dominant eerst op: {two} – {dom} – {target}. Twee maten en je zit volledig in {relKey}.',
-      'route.into.twoFive.label': 'De soepele weg — ii–V de nieuwe toonsoort in',
+      'route.into.twoFive.label': 'De soepele weg — ii–V de nieuwe toonaard in',
       'route.into.pivot': '{pivot} is {homeRoman} in {key} en {relRoman} in {relKey}. Ga daar naar binnen, cadenceer met {dom} en niemand hoort de naad.',
       'route.into.pivot.label': 'De onzichtbare weg — scharnierakkoord',
       'route.out.dominant': 'Eén akkoord is genoeg: {dom} is de dominant van {key} en van niets in {relKey}, dus het trekt het oor rechtstreeks terug naar {target}.',
@@ -380,7 +380,7 @@ const I18N = (() => {
       'secondary.footnote': 'De V7-kolom doet het werk: de terts stijgt een halve toon naar de grondtoon van het doel en de septiem daalt een halve toon naar de terts ervan. Die samenknijping is de hele truc.',
 
       'borrowed.heading': 'Modale uitwisseling',
-      'borrowed.sub': 'Akkoorden geleend uit {tonic} {parallelMode} — dezelfde grondtoon, andere toonsoort. Ze houden de toonsoort vast maar veranderen de kleur.',
+      'borrowed.sub': 'Akkoorden geleend uit {tonic} {parallelMode} — dezelfde grondtoon, ander toongeslacht. Ze houden de toonaard vast maar veranderen de kleur.',
       'borrowed.replaces': ' · in plaats van {chord} ({roman})',
       'source.parallel.major': 'Gelijknamige majeur',
       'source.parallel.minor': 'Gelijknamige mineur',
@@ -396,7 +396,7 @@ const I18N = (() => {
       'borrow.minor.1': 'De ii uit dorisch. Lichter als subdominant dan ii°.',
       'borrow.minor.2': 'Verhoogde mediant. Zeldzaam, meestal een doorgangsakkoord naar IV.',
       'borrow.minor.3': 'De dorische IV. Verhoogt de sext en laat een mineurgroove modaal klinken in plaats van tragisch.',
-      'borrow.minor.4': 'Majeur V uit harmonisch mineur. Zo krijgt een mineurtoonsoort een echte leidtoon.',
+      'borrow.minor.4': 'Majeur V uit harmonisch mineur. Zo krijgt een mineurtoonaard een echte leidtoon.',
       'borrow.minor.5': 'Verhoogde submediant. Dorische helderheid, werkt tussen iv en V.',
       'borrow.minor.6': 'Verhoogd verminderd subtonica-akkoord — het leidtoonakkoord, een alternatief voor V7.',
       'borrow.neapolitan': 'Napolitaans. Een majeurakkoord op de verlaagde tweede — dramatische subdominant, gaat naar V.',
@@ -412,7 +412,7 @@ const I18N = (() => {
       'prog.major.secondaryLift.name': 'Tussendominant-lift',
       'prog.major.secondaryLift.note': 'V7/ii trekt de ii er hard in.',
       'prog.major.toRelative.name': 'Naar de parallelle mineur',
-      'prog.major.toRelative.note': 'V7/vi is de deur naar de parallelle toonsoort.',
+      'prog.major.toRelative.note': 'V7/vi is de deur naar de parallelle toonaard.',
       'prog.major.borrowedFour.name': 'Geleende iv',
       'prog.major.borrowedFour.note': 'De klassieke modale uitwisseling.',
       'prog.major.backdoor.name': 'Achterdeur',
@@ -437,7 +437,7 @@ const I18N = (() => {
       'prog.minor.neapolitan.note': 'Drama in drie akkoorden.',
 
       'song.title': 'Bouw een progressie in {key}',
-      'song.sub': 'Klik een akkoord om het aan de progressie toe te voegen. De middelste rij is de toonsoort zelf; grijp omhoog voor een dominant die naar het akkoord eronder trekt, of omlaag voor een geleend akkoord dat het verkleurt.',
+      'song.sub': 'Klik een akkoord om het aan de progressie toe te voegen. De middelste rij is de toonaard zelf; grijp omhoog voor een dominant die naar het akkoord eronder trekt, of omlaag voor een geleend akkoord dat het verkleurt.',
       'song.row.secondary': 'Tussendominanten',
       'song.row.main': 'Hoofdakkoorden',
       'song.row.interchange': 'Modale uitwisseling',
@@ -474,7 +474,7 @@ const I18N = (() => {
       'diag.framed': 'Ingesloten in een frame',
       'diag.framedYes': 'ja — geluid kan hier geblokkeerd zijn',
       'diag.framedNo': 'nee',
-      'diag.key': 'Toonsoort',
+      'diag.key': 'Toonaard',
       'diag.keyValue': '{key} · {chord} geselecteerd',
       'diag.browser': 'Browser',
       'diag.blocked': 'Deze browser start geen geluid op deze pagina. Als je hem ingesloten in een andere pagina bekijkt, open hem dan in een eigen tabblad en de akkoorden klinken wel. Onderaan de pagina staat een <b>Diagnose</b>-paneel.',
@@ -485,7 +485,7 @@ const I18N = (() => {
       'diag.none.unsupported': 'Deze browser ondersteunt de Web Audio API niet.',
       'diag.none.other': 'Herlaad de pagina, klik een akkoord en test daarna opnieuw.',
 
-      'footer.line1': 'Alles hier wordt afgeleid uit de toonsoort die je koos — de schrijfwijzen, de cijfers en de stemvoering zijn berekend, niet opgezocht in een tabel.',
+      'footer.line1': 'Alles hier wordt afgeleid uit de toonaard die je koos — de schrijfwijzen, de cijfers en de stemvoering zijn berekend, niet opgezocht in een tabel.',
       'footer.line2': 'Geïnspireerd op de kartonnen akkoordwielen die muzikanten al decennia gebruiken.'
     }
   };
