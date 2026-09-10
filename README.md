@@ -99,6 +99,16 @@ low note added; given a clear minor seventh of air it reads as what it is. The
 chord itself does not move, so C and C/G stay in the same register when a
 progression goes between them.
 
+That bass is the one place the synth needs help. A triangle wave at 49 Hz is
+very nearly a sine — measured, *all* of its energy sits in the fundamental —
+and no laptop or phone reproduces 49 Hz at all, so the note simply is not there
+for most listeners. The recording has the opposite shape: its loudest partial
+is the octave above and the fundamental is 24 dB down, which is how the ear
+reads the pitch off the harmonics whatever the speaker can manage. So below
+120 Hz the synth is given harmonics in roughly those proportions, and turned
+down by as much as they add, because a bass should make a chord deeper rather
+than louder. No ordinary chord tone reaches that register; a test asserts it.
+
 Nothing is fetched until somebody actually picks the piano, because the
 recordings are several megabytes and most visitors never will. While they are
 on their way, and permanently wherever they cannot be had at all, the

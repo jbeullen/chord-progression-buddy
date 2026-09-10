@@ -263,6 +263,21 @@ is(voicing('C/G').slice(1).join(' '), '48 52 55 60',
   else passed++;
 });
 
+/* The synth gives its lowest register extra harmonics to be heard by, since a
+ * near-sine at 49 Hz does not come out of a laptop at all. That fades in below
+ * 120 Hz — MIDI 47 — on the understanding that only a slash bass ever goes
+ * there, and no ordinary chord tone does. */
+let tooLow = [];
+['major', 'minor'].forEach((mode) => {
+  [...T.MAJOR_KEYS, ...T.MINOR_KEYS].forEach((tonic) => {
+    const k = T.buildKey(T.parseNote(tonic), mode);
+    [...k.diatonic, ...T.borrowedChords(k)].forEach((c) => {
+      T.voice(c).forEach((m) => { if (m < 47) tooLow.push(`${c.symbol}: MIDI ${m}`); });
+    });
+  });
+});
+is(tooLow.length, 0, 'no ordinary chord tone reaches the bass register: ' + tooLow.slice(0, 4).join(', '));
+
 /* Everything the voicer can produce has to be within reach of a recording,
  * or the sampled piano stretches one further than the set was made for. */
 const SAMPLED = [27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84];

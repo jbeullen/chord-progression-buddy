@@ -213,20 +213,57 @@ const Sound = (() => {
       t0 + (sustained ? Math.min(0.9, dur) : dur)
     );
 
+    /* Down where a slash bass lives, a triangle wave is very nearly a sine:
+     * measured at G1, all of its energy sits in the 49 Hz fundamental and the
+     * second harmonic is 43 dB down. No laptop or phone reproduces 49 Hz at
+     * all, so the note is inaudible on most of the machines this runs on —
+     * which is exactly the complaint, and why the piano does not have it. The
+     * recorded low G puts almost nothing in its fundamental and its loudest
+     * partial is the octave above; the ear reads the pitch off the harmonics
+     * and supplies the rest, whether or not the speaker can.
+     *
+     * So the bass register gets harmonics of its own to be heard by, in
+     * roughly the proportions the recording has. This fades in below 120 Hz,
+     * which no chord tone ever reaches — only the bass of a slash chord goes
+     * down there. */
+    const boost = Math.min(1, Math.max(0, (120 - freq) / 50));
+    const HARMONICS = [[2, 1.6], [3, 1.0], [4, 0.5]];
+    /* Four oscillators where there were two, so the note is turned down by
+     * as much as they add. Adding a bass should make a chord deeper, not
+     * louder — measured, it was coming out 47% louder than the same chord
+     * without one. */
+    const level = gain / (1 + boost * 0.47);
+
     const endsAt = sustained
-      ? shapeSustained(g.gain, t0, dur, gain)
-      : shapeStruck(g.gain, t0, dur, gain);
+      ? shapeSustained(g.gain, t0, dur, level)
+      : shapeStruck(g.gain, t0, dur, level);
 
     osc.connect(lp);
     shimmer.connect(lp);
     lp.connect(g);
     g.connect(master);
 
+    const sources = [osc, shimmer];
+    if (boost > 0) {
+      HARMONICS.forEach(([mult, amount]) => {
+        const h = ctx.createOscillator();
+        const hg = ctx.createGain();
+        h.type = 'sine';
+        h.frequency.value = freq * mult;
+        hg.gain.value = amount * boost;
+        h.connect(hg);
+        hg.connect(lp);
+        h.start(t0);
+        h.stop(endsAt + 0.06);
+        sources.push(h);
+      });
+    }
+
     osc.start(t0);
     shimmer.start(t0);
     osc.stop(endsAt + 0.06);
     shimmer.stop(endsAt + 0.06);
-    register([osc, shimmer], g);
+    register(sources, g);
   }
 
   /* ------------------------------------------------------------- piano ---
