@@ -459,7 +459,7 @@ const I18N = (() => {
       'prog.play': '▶ Afspelen',
       'prog.playing': '▶ Speelt',
       'prog.stop': '■ Stop',
-      'prog.loop': '⟳ Herhalen',
+      'prog.loop': '⟳ Loop',
       'prog.clear': 'Wissen',
       'prog.remove': '{chord} verwijderen',
       'prog.playAria': 'Progressie afspelen',
