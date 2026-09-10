@@ -1,11 +1,12 @@
 /*
- * audio.js — the sound, so every chord on the page is audible. No samples and
- * no libraries: the whole app has to run from a file on disk.
+ * audio.js — the sound, so every chord on the page is audible. No libraries.
  *
- * Two instruments. The synth is two detuned oscillators per note through a
- * shared filter, which holds a chord flat and makes voice leading easy to
- * follow. The piano is built one partial at a time, further down, and is a
- * struck string rather than a held one.
+ * Two instruments, and the piano comes in two kinds. The synth is two detuned
+ * oscillators per note through a shared filter, which holds a chord flat and
+ * makes voice leading easy to follow. The piano is recordings of a real one,
+ * fetched only when somebody asks for it — and where they cannot be fetched,
+ * a piano built here one partial at a time, which is what keeps the app whole
+ * when it is opened straight off a disk.
  */
 const Sound = (() => {
   let ctx = null;
@@ -430,11 +431,127 @@ const Sound = (() => {
     register(sources, out);
   }
 
+  /* ----------------------------------------------------- the sampled piano ---
+   *
+   * Everything above is a piano reasoned from first principles, and there is a
+   * ceiling to that: a real instrument is hundreds of coupled resonances in a
+   * wooden box, and past a point the only way to sound like one is to have
+   * recorded one. These are recordings of a real Yamaha C5 — the Salamander
+   * Grand Piano, by Alexander Holm, under CC BY 3.0.
+   *
+   * They are a few megabytes, which is more than the rest of the app put
+   * together, so nothing is fetched until somebody actually asks for the piano.
+   * Until the files land — and permanently, if they cannot land at all, which
+   * is what happens when the page is opened straight off a disk or inlined into
+   * a single file — the synthesised piano above carries the sound. Nobody hears
+   * silence and nobody waits.
+   */
+  const SAMPLE_PATH = 'audio/piano/';
+  const SAMPLE_MIDI = {
+    C2: 36, Ds2: 39, Fs2: 42, A2: 45,
+    C3: 48, Ds3: 51, Fs3: 54, A3: 57,
+    C4: 60, Ds4: 63, Fs4: 66, A4: 69,
+    C5: 72, Ds5: 75, Fs5: 78, A5: 81,
+    C6: 84
+  };
+  /* The recordings are already as loud as they are; this only lines them up
+   * with the synth so the switch is not also a volume control. */
+  const SAMPLE_LEVEL = 9.5;
+
+  let samples = null;
+  let sampleState = 'off'; // off | loading | ready | unavailable
+  let sampleHandler = null;
+
+  const setSampleState = (s) => {
+    sampleState = s;
+    if (sampleHandler) sampleHandler(s);
+  };
+
+  /* Opened straight off a disk, fetch cannot read a neighbouring file at all —
+   * every browser refuses it as cross-origin. Asking anyway works, in the sense
+   * that the fallback catches it, but it fills the console with a screen of red
+   * that says the page is broken when it is doing exactly what it should. */
+  const canFetchSamples = () => /^https?:$/.test(location.protocol);
+
+  function loadSample(c, name) {
+    return fetch(SAMPLE_PATH + name + '.mp3')
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status);
+        return r.arrayBuffer();
+      })
+      // Safari's decodeAudioData wants the callback form, so wrap it either way.
+      .then((buf) => new Promise((res, rej) => {
+        const p = c.decodeAudioData(buf, res, rej);
+        if (p && typeof p.then === 'function') p.then(res, rej);
+      }))
+      .then((audio) => [SAMPLE_MIDI[name], audio]);
+  }
+
+  function loadSamples() {
+    if (sampleState === 'loading' || sampleState === 'ready') return;
+    const c = ensure();
+    if (!c || !canFetchSamples()) { setSampleState('unavailable'); return; }
+    setSampleState('loading');
+
+    const names = Object.keys(SAMPLE_MIDI);
+    /* One file first. Where the recordings were never deployed — the single
+     * file build, or the page inlined somewhere else — this asks once and gives
+     * up, rather than asking seventeen times to learn the same thing. */
+    loadSample(c, names[0])
+      .then((first) => Promise.all([first].concat(
+        names.slice(1).map((name) => loadSample(c, name)))))
+      .then((pairs) => {
+        samples = new Map(pairs);
+        setSampleState('ready');
+      })
+      /* One failure is enough to know: no retry loop, no repeated wait, and the
+       * synthesised piano keeps playing as though nothing happened. */
+      .catch(() => { samples = null; setSampleState('unavailable'); });
+  }
+
+  const SAMPLE_KEYS = Object.values(SAMPLE_MIDI).sort((a, b) => a - b);
+
+  function nearestSample(midi) {
+    let best = SAMPLE_KEYS[0];
+    SAMPLE_KEYS.forEach((m) => {
+      if (Math.abs(m - midi) < Math.abs(best - midi)) best = m;
+    });
+    return best;
+  }
+
+  function toneSampled(freq, t0, dur, gain) {
+    const midi = 69 + 12 * Math.log2(freq / 440);
+    const from = nearestSample(midi);
+
+    const src = ctx.createBufferSource();
+    src.buffer = samples.get(from);
+    // Never more than a tone and a half of shifting: the samples sit a minor
+    // third apart, which is what the set was recorded for.
+    src.playbackRate.value = Math.pow(2, (midi - from) / 12);
+
+    /* The recording already is the attack, the decay and the room. The only
+     * thing left to add is the damper: the note rings as it was played until
+     * the bar runs out, and is then let go the way a key is. */
+    const g = ctx.createGain();
+    const hold = Math.max(0.12, dur);
+    const release = 0.16;
+    g.gain.setValueAtTime(gain * SAMPLE_LEVEL, t0);
+    g.gain.setValueAtTime(gain * SAMPLE_LEVEL, t0 + hold);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + hold + release);
+
+    src.connect(g);
+    g.connect(master);
+    src.start(t0);
+    src.stop(t0 + hold + release + 0.02);
+    register([src], g);
+  }
+
   let instrument = 'synth';
 
   function tone(freq, t0, dur, gain, sustained) {
-    if (instrument === 'piano') tonePiano(freq, t0, dur, gain);
-    else toneSynth(freq, t0, dur, gain, sustained);
+    if (instrument !== 'piano') return toneSynth(freq, t0, dur, gain, sustained);
+    if (sampleState === 'ready' && samples) return toneSampled(freq, t0, dur, gain);
+    return tonePiano(freq, t0, dur, gain);
   }
 
   /* Cut every sounding and scheduled note, with a short fade so stopping does
@@ -520,7 +637,14 @@ const Sound = (() => {
     isMuted: () => muted,
     setMuted: (v) => { muted = v; },
     instrument: () => instrument,
-    setInstrument: (v) => { instrument = v === 'piano' ? 'piano' : 'synth'; },
+    setInstrument: (v) => {
+      instrument = v === 'piano' ? 'piano' : 'synth';
+      if (instrument === 'piano') loadSamples();
+    },
+    /* 'loading' while the recordings are on their way, 'unavailable' when they
+     * cannot be had at all. Either way the piano still plays. */
+    samples: () => sampleState,
+    onSamples: (fn) => { sampleHandler = fn; },
     /* Called once if the browser refuses to start audio, so the UI can say so
      * instead of just staying silent. */
     onBlocked: (fn) => { blockedHandler = fn; },

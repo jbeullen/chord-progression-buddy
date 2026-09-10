@@ -34,6 +34,9 @@ const I18N = (() => {
       'instrument.label': 'Sound',
       'instrument.synth': 'Synth',
       'instrument.piano': 'Piano',
+      'instrument.loading': 'Fetching the recordings…',
+      'instrument.sampled': 'Recorded piano',
+      'instrument.synthesised': 'Synthesised piano — the recordings are not available here',
       'toggle.mute': 'Mute',
       'toggle.unmute': 'Unmute',
       'toggle.muteTitle': 'Silence chord playback',
@@ -266,7 +269,8 @@ const I18N = (() => {
 
       // ----------------------------------------------------------- footer ---
       'footer.line1': 'Everything here is generated from the key you picked — the spellings, the numerals and the voice leading are all computed, not looked up in a table.',
-      'footer.line2': 'Inspired by the cardboard chord wheels musicians have used for decades.'
+      'footer.line2': 'Inspired by the cardboard chord wheels musicians have used for decades.',
+      'footer.samples': 'Piano recordings: <a href="https://archive.org/details/SalamanderGrandPianoV3" rel="noopener">Salamander Grand Piano</a> by Alexander Holm, <a href="https://creativecommons.org/licenses/by/3.0/" rel="noopener">CC BY 3.0</a>.'
     },
 
     nl: {
@@ -285,6 +289,9 @@ const I18N = (() => {
       'instrument.label': 'Klank',
       'instrument.synth': 'Synth',
       'instrument.piano': 'Piano',
+      'instrument.loading': 'Opnames worden opgehaald…',
+      'instrument.sampled': 'Opgenomen piano',
+      'instrument.synthesised': 'Gesynthetiseerde piano — de opnames zijn hier niet beschikbaar',
       'toggle.mute': 'Dempen',
       'toggle.unmute': 'Geluid aan',
       'toggle.muteTitle': 'Akkoorden niet laten klinken',
@@ -508,7 +515,8 @@ const I18N = (() => {
       'diag.none.other': 'Herlaad de pagina, klik een akkoord en test daarna opnieuw.',
 
       'footer.line1': 'Alles hier wordt afgeleid uit de toonaard die je koos — de schrijfwijzen, de cijfers en de stemvoering zijn berekend, niet opgezocht in een tabel.',
-      'footer.line2': 'Geïnspireerd op de kartonnen akkoordwielen die muzikanten al decennia gebruiken.'
+      'footer.line2': 'Geïnspireerd op de kartonnen akkoordwielen die muzikanten al decennia gebruiken.',
+      'footer.samples': 'Piano-opnames: <a href="https://archive.org/details/SalamanderGrandPianoV3" rel="noopener">Salamander Grand Piano</a> van Alexander Holm, <a href="https://creativecommons.org/licenses/by/3.0/" rel="noopener">CC BY 3.0</a>.'
     }
   };
 

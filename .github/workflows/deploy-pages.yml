@@ -40,7 +40,7 @@ jobs:
       - name: Assemble the site
         run: |
           mkdir -p _site
-          cp -r css js _site/
+          cp -r css js audio _site/
           # Stamp every asset URL with the commit. Without this the browser
           # keeps the previous deploy's stylesheet and scripts — index.html is
           # revalidated, but the files it pulls in are not, so a change can ship

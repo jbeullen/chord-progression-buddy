@@ -86,11 +86,28 @@ dragged during playback and takes effect from the next chord.
 
 ## Synth or piano
 
-A switch in the top bar picks which one plays, everywhere on the page. There
-are no samples — the whole thing has to run from a file on disk — so the piano
-is argued from what a piano does rather than recorded from one, and it is built
-one partial at a time, because the things that separate a struck string from a
-synthesiser are things no single waveform can express:
+A switch in the top bar picks which one plays, everywhere on the page.
+
+The piano is a real one: the **Salamander Grand Piano** — a recorded Yamaha C5
+by Alexander Holm, under [CC BY 3.0][ccby] — one sample every minor third
+across the range the app can play, so no note is pitch-shifted by more than a
+tone and a half.
+
+Nothing is fetched until somebody actually picks the piano, because the
+recordings are several megabytes and most visitors never will. While they are
+on their way, and permanently wherever they cannot be had at all, the
+*synthesised* piano below plays instead. Nobody hears silence and nobody waits;
+the button says which one you are getting.
+
+[ccby]: https://creativecommons.org/licenses/by/3.0/
+
+### The synthesised piano
+
+It stands in whenever the recordings are missing — opening `index.html` off a
+disk, or the single-file build, where there is nowhere for a few megabytes of
+audio to live. It is built one partial at a time, because the things that
+separate a struck string from a synthesiser are things no single waveform can
+express:
 
 - **A piano string is stiff, so it is not harmonic.** Its partials sit
   progressively sharp of the whole-number multiples, by `f·n·√(1 + Bn²)`. The
@@ -123,9 +140,7 @@ synthesiser are things no single waveform can express:
   impulse response, which Stop ducks along with everything else.
 
 It is a good imitation and not a recording, and there is a ceiling to how close
-this can get: a real piano is hundreds of coupled resonances, and matching it
-properly means sampling one. That would mean shipping audio files, which is
-the one thing the "opens from disk with no dependencies" rule rules out.
+it can get — which is why the recordings are there when they can be.
 
 The difference is not only timbre. The synth holds a chord flat for as long as
 it is given; the piano decays at the string's own rate and is damped when the

@@ -982,11 +982,22 @@
     writeHash();
   });
 
+  /* The piano button reports whether it is playing the recordings or standing
+   * in for them, because "it sounds different from last time" is otherwise a
+   * mystery. It says nothing at all while the synth is selected. */
   function renderInstrument() {
     document.querySelectorAll('#instrumentToggle button').forEach((b) => {
       b.classList.toggle('on', b.dataset.instrument === state.instrument);
     });
+    const btn = $('#instrumentToggle [data-instrument="piano"]');
+    const stage = state.instrument === 'piano' ? Sound.samples() : 'off';
+    btn.classList.toggle('loading', stage === 'loading');
+    btn.title = stage === 'loading' ? t('instrument.loading')
+      : stage === 'unavailable' ? t('instrument.synthesised')
+        : stage === 'ready' ? t('instrument.sampled') : '';
   }
+
+  Sound.onSamples(() => renderInstrument());
 
   /* The label names the action, not the state: a silent page should never
    * tempt anyone into clicking the control that silences it. */

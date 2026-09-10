@@ -234,6 +234,27 @@ main {
  * the sound controls use rather than the accent that marks the current key. */
 .seg-sound button { padding: 6px 11px; font-size: 12.5px; }
 .seg-sound button.on { background: var(--pre); color: #04182e; }
+/* While the recordings are on their way. The synthesised piano is playing in
+   the meantime, so this is information rather than a wait. */
+.seg-sound button.loading { position: relative; }
+.seg-sound button.loading::after {
+  content: "";
+  position: absolute;
+  left: 8px; right: 8px; bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  background-size: 60% 100%;
+  background-repeat: no-repeat;
+  animation: sound-loading 1.1s linear infinite;
+}
+@keyframes sound-loading {
+  from { background-position: -60% 0; }
+  to   { background-position: 160% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seg-sound button.loading::after { animation: none; background-position: 50% 0; }
+}
 
 /* The three rows must stay in vertical register — a dominant has to sit above
  * the chord it resolves to. So the grid never reflows to fewer columns; on a
