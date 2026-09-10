@@ -105,9 +105,27 @@ synthesiser are things no single waveform can express:
   cannot excite a partial with a node at that point. The eighth is missing.
 - The felt is soft and a soundboard is not a tweeter, so the top of the
   spectrum is rolled off steeply rather than merely thinned.
-- On top of that, a broadband thump for the hammer, and a second detuned copy
-  of the lowest partials, since a note is two or three strings tuned a hair
-  apart and the beating between them is a sound no single string makes.
+- **A struck note does not decay at one rate.** The strings of a unison are
+  coupled through the bridge; while they are in phase they feed the soundboard
+  hard and lose energy fast, and once they drift apart they hold on to it. That
+  knee a fraction of a second in is the piano's "prompt sound" and
+  "aftersound", and a single clean exponential never sounds struck.
+- On top of that, a two-part hammer — a click and the knock of the action
+  underneath it — and a second detuned copy of the lowest partials, since a
+  note is two or three strings tuned a hair apart and the beating between them
+  is a sound no single string makes. Both wander slightly from note to note,
+  because two identical strikes are a sound only a machine makes.
+- **And then the part that is not the string at all.** Strings alone are
+  nearly inaudible: a piano is a soundboard, and a soundboard is a wooden box
+  in a room. Perfectly accurate partials with nothing around them still sound
+  like an oscillator bank, because nobody has ever heard a note that arrived
+  without a room attached. So the strings also go through a small synthesised
+  impulse response, which Stop ducks along with everything else.
+
+It is a good imitation and not a recording, and there is a ceiling to how close
+this can get: a real piano is hundreds of coupled resonances, and matching it
+properly means sampling one. That would mean shipping audio files, which is
+the one thing the "opens from disk with no dependencies" rule rules out.
 
 The difference is not only timbre. The synth holds a chord flat for as long as
 it is given; the piano decays at the string's own rate and is damped when the

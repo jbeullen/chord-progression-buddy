@@ -254,23 +254,62 @@ const Sound = (() => {
    * detuned copy of the lowest partials, since a note is two or three strings
    * tuned a hair apart and the slow beating between them is a sound no single
    * string makes.
+   *
+   * And then the part that has nothing to do with the string. Strings on their
+   * own are nearly inaudible — a piano is a soundboard, and a soundboard is a
+   * large wooden box in a room. Perfectly accurate partials with no body around
+   * them still sound like an oscillator bank, because in life nobody has ever
+   * heard a note that arrived without a room attached. So the strings are sent
+   * through a small synthesised impulse response as well as straight out.
    */
   const MAX_PARTIALS = 14;
   const STRIKE_POINT = 1 / 8; // where the hammer meets the string
   /* A dozen partials starting together add up to far more than one oscillator
    * did, so the per-note level is scaled to land beside the synth. Tuned by
    * measuring the output, not by ear. */
-  const PIANO_LEVEL = 1.35;
+  const PIANO_LEVEL = 1.62;
+  const BODY_WET = 0.5;
   let hammerNoise = null;
+  let bodyIn = null;
+  let bodyWet = null;
 
   function noise() {
     if (!hammerNoise) {
-      const n = Math.floor(ctx.sampleRate * 0.12);
+      const n = Math.floor(ctx.sampleRate * 0.2);
       hammerNoise = ctx.createBuffer(1, n, ctx.sampleRate);
       const data = hammerNoise.getChannelData(0);
       for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1;
     }
     return hammerNoise;
+  }
+
+  /* The soundboard and the room it stands in: a short, dense decay with a few
+   * discrete early reflections, which is what gives a box a size. Built once,
+   * shared by every note. */
+  function body() {
+    if (!bodyIn) {
+      const len = Math.floor(ctx.sampleRate * 0.6);
+      const ir = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        for (let i = 0; i < len; i++) {
+          d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.8);
+        }
+        // Slightly different reflection times per channel, so it has width.
+        [0.0061, 0.0119, 0.0203, 0.0314].forEach((sec, k) => {
+          const i = Math.floor((sec + ch * 0.0013) * ctx.sampleRate);
+          if (i < len) d[i] += (k % 2 ? -0.6 : 0.7) / (k + 1);
+        });
+      }
+      const conv = ctx.createConvolver();
+      conv.buffer = ir;
+      bodyWet = ctx.createGain();
+      bodyWet.gain.value = BODY_WET;
+      conv.connect(bodyWet);
+      bodyWet.connect(master);
+      bodyIn = conv;
+    }
+    return bodyIn;
   }
 
   /* Stiffness rises steeply towards the bass, where the strings are short for
@@ -282,6 +321,7 @@ const Sound = (() => {
     const out = ctx.createGain();
     out.gain.value = 1;
     out.connect(master);
+    out.connect(body());
 
     const B = inharmonicity(freq);
     const ceiling = Math.min(ctx.sampleRate * 0.45, 15000);
@@ -326,9 +366,17 @@ const Sound = (() => {
       const damped = left > 0.0002;
       const ends = t0 + ring + (damped ? 0.09 : 0);
 
+      /* A struck note does not decay at one rate. The strings of a unison are
+       * coupled through the bridge, and while they are still in phase they
+       * feed the soundboard hard and lose energy fast; once they drift apart
+       * they hold on to it and ring on much longer. Hence the piano's "prompt
+       * sound" and its "aftersound" — an audible knee a fraction of a second
+       * in, and the reason a single clean exponential never sounds struck. */
+      const prompt = Math.min(ring * 0.5, t60 * 0.05);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t0);
       g.gain.linearRampToValueAtTime(amp, t0 + attack);
+      if (prompt > attack) g.gain.exponentialRampToValueAtTime(amp * 0.62, t0 + prompt);
       g.gain.exponentialRampToValueAtTime(left, t0 + ring);
       if (damped) g.gain.exponentialRampToValueAtTime(0.0001, ends);
 
@@ -347,25 +395,37 @@ const Sound = (() => {
     for (let n = 1; n <= MAX_PARTIALS; n++) {
       if (!partial(n, 0, 1)) break;
     }
-    // The unison, on the partials that carry the weight of the note.
-    partial(1, -1.6, 0.7);
-    partial(2, 2.1, 0.7);
+    /* The unison, on the partials that carry the weight of the note. The
+     * amount of detuning wanders a little from note to note, because a piano
+     * is never twice in exactly the same tune and two identical strikes are a
+     * sound only a machine makes. */
+    const wander = () => 1 + (Math.random() - 0.5) * 0.5;
+    partial(1, -1.7 * wander(), 0.7);
+    partial(2, 2.2 * wander(), 0.7);
 
-    const hit = ctx.createBufferSource();
-    hit.buffer = noise();
-    const band = ctx.createBiquadFilter();
-    band.type = 'bandpass';
-    band.frequency.value = Math.min(6000, Math.max(900, freq * 7));
-    band.Q.value = 0.6;
-    const hitGain = ctx.createGain();
-    hitGain.gain.setValueAtTime(gain * 0.55, t0);
-    hitGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.035);
-    hit.connect(band);
-    band.connect(hitGain);
-    hitGain.connect(out);
-    hit.start(t0);
-    hit.stop(t0 + 0.1);
-    sources.push(hit);
+    /* The hammer, in two parts. The click is what you hear on a bright note;
+     * the knock underneath it is the weight of the action and the case, and
+     * without it the attack is a tick rather than a blow. */
+    const strike = (filter, freqHz, q, level, decay) => {
+      const src = ctx.createBufferSource();
+      src.buffer = noise();
+      const f = ctx.createBiquadFilter();
+      f.type = filter;
+      f.frequency.value = freqHz;
+      f.Q.value = q;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(gain * level, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + decay);
+      src.connect(f);
+      f.connect(g);
+      g.connect(out);
+      // A different slice of noise each time, so no two strikes are identical.
+      src.start(t0, Math.random() * 0.08);
+      src.stop(t0 + decay + 0.05);
+      sources.push(src);
+    };
+    strike('bandpass', Math.min(6000, Math.max(900, freq * 7)), 0.6, 0.5, 0.035);
+    strike('lowpass', Math.max(160, Math.min(700, freq * 2.2)), 0.8, 0.42, 0.075);
 
     register(sources, out);
   }
@@ -392,6 +452,16 @@ const Sound = (() => {
         // Already stopped — nothing to cut.
       }
     });
+    /* The soundboard is shared and outlives any one note, so stopping has to
+     * duck it too — otherwise Stop leaves half a second of room ringing after
+     * everything that fed it has gone. It comes back a moment later, ready for
+     * the next note. */
+    if (bodyWet) {
+      bodyWet.gain.cancelScheduledValues(t);
+      bodyWet.gain.setValueAtTime(bodyWet.gain.value, t);
+      bodyWet.gain.linearRampToValueAtTime(0.0001, t + 0.05);
+      bodyWet.gain.setValueAtTime(BODY_WET, t + 0.45);
+    }
     live = [];
   }
 
