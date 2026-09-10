@@ -40,8 +40,13 @@ jobs:
       - name: Assemble the site
         run: |
           mkdir -p _site
-          cp index.html _site/
           cp -r css js _site/
+          # Stamp every asset URL with the commit. Without this the browser
+          # keeps the previous deploy's stylesheet and scripts — index.html is
+          # revalidated, but the files it pulls in are not, so a change can ship
+          # green and still not reach anyone who has been here before.
+          sed -E 's#(href="css/[^"]*|src="js/[^"]*)"#\1?v='"${GITHUB_SHA:0:8}"'"#g' index.html > _site/index.html
+          grep -c '?v=' _site/index.html   # fails the deploy if nothing was stamped
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
