@@ -493,6 +493,40 @@ main {
 
 .prog-empty { color: var(--muted); font-size: 13px; font-style: italic; }
 
+/* Typing a chord that is not on the grid. */
+.chord-input {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.chord-input label { font-size: 12px; font-weight: 650; color: var(--muted); }
+.chord-input input {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 11px;
+  width: 190px;
+  max-width: 100%;
+}
+.chord-input input:focus { outline: none; border-color: var(--accent); }
+.chord-input input.bad { border-color: var(--dom); }
+.chord-input input::placeholder { color: var(--muted); font-weight: 400; }
+.chord-echo { font-size: 12.5px; font-weight: 650; color: var(--tonic); }
+.chord-echo.bad { color: var(--dom); font-weight: 400; font-style: italic; }
+.chord-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .prog-slot {
   position: relative;
   display: flex;

@@ -222,6 +222,12 @@ const I18N = (() => {
       'prog.clear': 'Clear',
       'prog.remove': 'Remove {chord}',
       'prog.playAria': 'Play progression',
+      'chordinput.label': 'Or type one',
+      'chordinput.placeholder': 'C/G, E♭maj7♯11, Am9…',
+      'chordinput.add': 'Add',
+      'chordinput.hint': 'Anything the grid does not carry: slash chords, tensions, sus and add. Sharps and flats can be typed as # and b. It transposes with the key like everything else.',
+      'chordinput.preview': '{chord} · {roman} · {number}',
+      'chordinput.unknown': 'Cannot read “{text}” as a chord.',
 
       // ------------------------------------------------------ diagnostics ---
       'diag.heading': 'Diagnostics',
@@ -457,6 +463,12 @@ const I18N = (() => {
       'prog.clear': 'Wissen',
       'prog.remove': '{chord} verwijderen',
       'prog.playAria': 'Progressie afspelen',
+      'chordinput.label': 'Of typ er een',
+      'chordinput.placeholder': 'C/G, E♭maj7♯11, Am9…',
+      'chordinput.add': 'Toevoegen',
+      'chordinput.hint': 'Alles wat niet op het raster staat: omkeringen met een basnoot, spanningen, sus en add. Kruisen en mollen mag je als # en b typen. Het transponeert mee met de toonaard, net als de rest.',
+      'chordinput.preview': '{chord} · {roman} · {number}',
+      'chordinput.unknown': 'Kan “{text}” niet als akkoord lezen.',
 
       'diag.heading': 'Diagnose',
       'diag.sub': 'Hier om één vraag te beantwoorden als het geluid hapert: maakt deze pagina geluid, of gaat het geluid daarna ergens verloren?',

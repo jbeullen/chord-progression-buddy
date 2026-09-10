@@ -57,6 +57,21 @@ key transposes it** — build `I vi IV V` in C, switch to G, and it follows you.
 The progression rides in the URL too, so a worked-out sequence is a link you
 can send someone.
 
+### Typing a chord
+
+The grid holds the chords a key offers, not every chord a song can use, so
+there is an input box under the progression for the rest: slash chords,
+tensions, sus and add — `C/G`, `E♭maj7♯11`, `Am9`, `D7sus4`, `B♭13`, `F♯m7♭5`.
+Sharps and flats can be typed as `#` and `b`, `-` works for minor, and what you
+typed is echoed back as the app reads it before you commit to it. Anything it
+cannot read it says so about, rather than adding an approximation.
+
+Typed chords are parsed into spelled notes like everything else, so the ♯11 of
+`E♭maj7♯11` comes out as an A and not a B♭♭. They are stored as a distance from
+the tonic rather than as a chord, which means **they transpose too**: a `C/G`
+typed in C major becomes `G/D` in G major, and travels in the URL alongside the
+rest of the progression.
+
 ## Tempo
 
 The control in the key bar governs every sound the page makes, in both modes:

@@ -208,6 +208,64 @@ const emitted = new Set();
 const unknown = [...emitted].filter((key) => I18N.t(key) === key);
 is(unknown.length, 0, 'every key the theory layer emits is translated: ' + unknown.join(', '));
 
+// --------------------------------------------------------- typed chords ---
+const CM = T.buildKey(T.parseNote('C'), 'major');
+const typed = (text) => {
+  const c = T.parseChordSymbol(text);
+  return c ? c.notes.map(T.noteName).join(' ') : 'UNREADABLE';
+};
+const typedName = (text) => {
+  const c = T.parseChordSymbol(text);
+  return c ? c.symbol : 'UNREADABLE';
+};
+
+is(typed('C/G'), 'C E G', 'a slash chord keeps its own notes');
+is(typed('Cmaj7'), 'C E G B', 'maj7');
+is(typed('Cmaj'), 'C E G', 'maj on its own is a triad, not a seventh');
+is(typed('C-7'), 'C E♭ G B♭', 'a hyphen is minor');
+is(typed('Cm7' + T.FLAT + '5'), 'C E♭ G♭ B♭', 'half-diminished, typed with a real flat sign');
+is(typed('Cdim7'), 'C E♭ G♭ B♭♭', 'a diminished seventh spells its seventh as a seventh');
+is(typed('Co7'), 'C E♭ G♭ B♭♭', 'o is read as diminished');
+is(typed('Csus4'), 'C F G', 'sus4 replaces the third');
+is(typed('Csus2'), 'C D G', 'sus2 replaces the third');
+is(typed('C6'), 'C E G A', 'a sixth chord, not a seventh');
+is(typed('Cadd9'), 'C E G D', 'add9 adds a ninth and no seventh');
+is(typed('C7b9'), 'C E G B♭ D♭', 'an altered ninth on a dominant');
+is(typed('C13'), 'C E G B♭ D A', 'a thirteenth leaves out the eleventh');
+is(typed('Cm11'), 'C E♭ G B♭ D F', 'an eleventh chord has one');
+is(typed('C+'), 'C E G♯', 'augmented');
+is(typed('Cno3'), 'C G', 'no3 drops the third');
+
+/* The reason any of this is spelled rather than counted in semitones. */
+is(typed('E' + T.FLAT + 'maj7#11'), 'E♭ G B♭ D A',
+  'the ♯11 of E♭maj7 is an A, and nothing else is added');
+is(typed('E' + T.FLAT + '7#9'), 'E♭ G B♭ D♭ F♯', 'the ♯9 of E♭7 is an F♯, not a G♭');
+
+is(typedName('ebMAJ7#11'), 'E♭maj7♯11', 'accidentals are normalised for display');
+is(typedName('Bb13'), 'B♭13', 'a typed b becomes a flat');
+is(T.parseChordSymbol('H7'), null, 'H is not a note here');
+is(T.parseChordSymbol('Cwhatever'), null, 'unreadable is null, not a guess');
+is(T.parseChordSymbol('C/H'), null, 'an unreadable bass makes the whole thing unreadable');
+is(T.parseChordSymbol(''), null, 'empty is not a chord');
+
+/* Numerals and numbers name both ends of a slash chord in their own system. */
+const slash = T.parseChordSymbol('C/G');
+is(T.romanFor(slash, CM.scaleNotes), 'I/V', 'a slash chord gets a slash numeral');
+is(T.numberFor(slash, CM.scaleNotes), '1/5', 'and a slash number');
+is(T.voice(slash)[0] < T.voice(slash)[1], true, 'the slash bass is voiced below the chord');
+
+/* A typed chord is stored as a distance from the tonic, so it transposes. */
+const GM = T.buildKey(T.parseNote('G'), 'major');
+const roundTrip = (text, key) => {
+  const slot = T.typedSlot(CM, T.parseChordSymbol(text));
+  const back = T.songChordAt(key, slot);
+  return back ? back.symbol : 'LOST';
+};
+is(roundTrip('C/G', CM), 'C/G', 'a typed chord survives its own key');
+is(roundTrip('C/G', GM), 'G/D', 'and transposes with the key, bass and all');
+is(roundTrip('E' + T.FLAT + 'maj7#11', GM), 'B♭maj7♯11', 'tensions travel too');
+is(roundTrip('F#m7b5', GM), 'C♯m7♭5', 'and the transposed spelling stays honest');
+
 // ------------------- a sentence must not name a chord its button won't play ---
 /* Params holding a chord symbol, as opposed to a note, numeral or key name.
  * "approach.tritone" is the one place a chord is named as a comparison rather

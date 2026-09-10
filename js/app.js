@@ -125,6 +125,9 @@
     document.querySelectorAll('[data-i18n-title]').forEach((el) => {
       el.title = t(el.dataset.i18nTitle);
     });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      el.placeholder = t(el.dataset.i18nPlaceholder);
+    });
     const other = state.lang === 'en' ? 'nl' : 'en';
     $('#langToggle').textContent = t('lang.switchTo');
     $('#langToggle').setAttribute('aria-label', t('lang.switchTo'));
@@ -698,14 +701,58 @@
   const ROW_CODE = { main: 'm', secondary: 's', interchange: 'i' };
   const CODE_ROW = { m: 'main', s: 'secondary', i: 'interchange' };
 
-  const encodeProg = () => state.prog.map((s) => ROW_CODE[s.row] + s.pos).join('-');
+  /* Typed chords ride along as their distance from the tonic, the same thing
+   * the app stores in memory. The semitone distance is offset so it can never
+   * be negative: a minus sign would be indistinguishable from a separator.
+   *
+   * That is also why the separator moved from "-" to "_". A hyphen is an
+   * ordinary way to write a minor chord (C-7), and escaping it does not help —
+   * browsers decode %2D back to a hyphen inside the fragment before we ever
+   * read it. Links made before the move still say "-" and are still read. */
+  const SEMI_OFFSET = 12;
+  const SEP = '_';
+  const LEGACY_SEP = /^[msi]\d(-[msi]\d)+$/;
+
+  function encodeSlot(s) {
+    if (s.row !== 'typed') return ROW_CODE[s.row] + s.pos;
+    const parts = ['t' + s.deg, s.semis + SEMI_OFFSET, encodeURIComponent(s.body)];
+    if (s.bassDeg !== undefined) parts.push(s.bassDeg, s.bassSemis + SEMI_OFFSET);
+    return parts.join('.');
+  }
+
+  function decodeSlot(tok) {
+    if (tok[0] !== 't') {
+      const slot = { row: CODE_ROW[tok[0]], pos: parseInt(tok.slice(1), 10) };
+      return slot.row && slot.pos >= 0 && slot.pos <= 6 ? slot : null;
+    }
+    const p = tok.split('.');
+    const deg = parseInt(p[0].slice(1), 10);
+    const semis = parseInt(p[1], 10) - SEMI_OFFSET;
+    if (isNaN(deg) || isNaN(semis) || deg < 0 || deg > 6) return null;
+    let body;
+    try { body = decodeURIComponent(p[2] || ''); } catch (e) { return null; }
+    const slot = { row: 'typed', deg, semis, body };
+    if (p.length >= 5) {
+      const bd = parseInt(p[3], 10);
+      const bs = parseInt(p[4], 10) - SEMI_OFFSET;
+      if (!isNaN(bd) && !isNaN(bs)) { slot.bassDeg = bd; slot.bassSemis = bs; }
+    }
+    /* The hash is read before the key exists, so the body is checked on its
+     * own root: a body that does not parse would render an empty slot, and
+     * dropping it is better than showing a hole. */
+    return T.typedChord(T.parseNote('C'), slot.body, null) ? slot : null;
+  }
+
+  const encodeProg = () => state.prog.map(encodeSlot).join(SEP);
 
   function decodeProg(str) {
     if (!str) return [];
-    return str.split('-').map((tok) => ({
-      row: CODE_ROW[tok[0]],
-      pos: parseInt(tok.slice(1), 10)
-    })).filter((s) => s.row && s.pos >= 0 && s.pos <= 6);
+    const tokens = [];
+    str.split(SEP).forEach((tok) => {
+      if (LEGACY_SEP.test(tok)) tokens.push(...tok.split('-'));
+      else tokens.push(tok);
+    });
+    return tokens.map(decodeSlot).filter(Boolean);
   }
 
   function writeHash() {
@@ -830,6 +877,46 @@
       renderProgression();
       writeHash();
     }
+  });
+
+  /* Typing a chord the grid does not have. What comes back is stored as a
+   * distance from the tonic exactly like a grid position, so a typed C/G
+   * follows you to G major as G/D rather than staying behind. */
+  function readTypedChord(text) {
+    const parsed = T.parseChordSymbol(text);
+    if (!parsed) return null;
+    return T.songChordAt(key, T.typedSlot(key, parsed));
+  }
+
+  function echoTypedChord() {
+    const echo = $('#chordEcho');
+    const text = $('#chordText').value.trim();
+    const chord = text ? readTypedChord(text) : null;
+    $('#chordText').classList.toggle('bad', Boolean(text) && !chord);
+    echo.classList.toggle('bad', Boolean(text) && !chord);
+    echo.textContent = !text ? ''
+      : chord ? t('chordinput.preview', { chord: chord.symbol, roman: chord.roman, number: chord.number })
+        : t('chordinput.unknown', { text });
+  }
+
+  $('#chordText').addEventListener('input', echoTypedChord);
+
+  $('#chordForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('#chordText');
+    const parsed = T.parseChordSymbol(input.value);
+    if (!parsed) { echoTypedChord(); input.focus(); return; }
+
+    const slot = T.typedSlot(key, parsed);
+    state.prog.push(slot);
+    const chord = T.songChordAt(key, slot);
+    Sound.unlock();
+    Sound.chord(T.voice(chord), 0, chordDuration());
+    input.value = '';
+    echoTypedChord();
+    input.focus();
+    renderProgression();
+    writeHash();
   });
 
   /* Tempo. The control lives in static markup rather than in a rendered panel,

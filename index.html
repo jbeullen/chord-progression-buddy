@@ -82,6 +82,16 @@
         </div>
       </div>
       <div class="prog-strip" id="progStrip"></div>
+
+      <form class="chord-input" id="chordForm" autocomplete="off">
+        <label for="chordText" data-i18n="chordinput.label"></label>
+        <input type="text" id="chordText" spellcheck="false" autocapitalize="off"
+               data-i18n-placeholder="chordinput.placeholder"
+               data-i18n-aria="chordinput.label">
+        <button type="submit" class="transport-btn" id="chordAdd" data-i18n="chordinput.add"></button>
+        <span class="chord-echo" id="chordEcho" aria-live="polite"></span>
+        <p class="chord-hint" data-i18n="chordinput.hint"></p>
+      </form>
     </section>
   </div>
 

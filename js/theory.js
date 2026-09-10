@@ -159,16 +159,212 @@ const Theory = (() => {
     return makeChord(notes);
   }
 
+  // --------------------------------------------------------- typed chords ---
+
+  /*
+   * Chords a player types rather than picks off the grid: C/G, E♭maj7♯11, Am9,
+   * F♯m7♭5, Dsus4. The point of parsing them into spelled notes rather than
+   * pitch classes is the same as everywhere else in this file — the ♯11 of
+   * E♭maj7 is an A, and calling it a B♭♭ would be a different note on paper
+   * even though it sounds identical.
+   *
+   * Each chord tone is a letter distance plus a semitone distance, so a ♭9 is
+   * always a ninth and never an augmented octave.
+   */
+  const CHORD_TONES = {
+    root: [0, 0],
+    maj3: [2, 4], min3: [2, 3], sus2: [1, 2], sus4: [3, 5],
+    dim5: [4, 6], per5: [4, 7], aug5: [4, 8],
+    six: [5, 9],
+    dim7: [6, 9], min7: [6, 10], maj7: [6, 11],
+    nine: [8, 14], eleven: [10, 17], thirteen: [12, 21]
+  };
+
+  /* One pass over the part of the symbol after the root. Returns null the
+   * moment it meets something it cannot account for: a chord box that silently
+   * ignores half of what you typed is worse than one that says it cannot read
+   * it. */
+  function scanChordBody(ascii) {
+    let s = ascii;
+    const spec = {
+      third: 'maj3', fifth: 'per5', seventh: null,
+      six: false, tensions: [], drop: {}
+    };
+    let ext = 0;
+    let sawDim = false;
+
+    const eat = (re) => {
+      const m = re.exec(s);
+      if (m) s = s.slice(m[0].length);
+      return m;
+    };
+    const alter = (degree, offset) => {
+      spec.tensions = spec.tensions.filter((tn) => tn.degree !== degree);
+      spec.tensions.push({ degree, offset });
+    };
+
+    // The quality sits first, if it is spelled out at all. "m" is minor and
+    // "M" is a major seventh, so this stretch is deliberately case-sensitive.
+    if (eat(/^(maj|Maj|MAJ)(?![a-z])/) || eat(/^M(?=\d)/)) spec.seventh = 'maj7';
+    else if (eat(/^(min|Min|m|-)(?!aj)/)) spec.third = 'min3';
+    else if (eat(/^(dim|Dim|o(?=7|$))/)) { spec.third = 'min3'; spec.fifth = 'dim5'; sawDim = true; }
+    else if (eat(/^(aug|Aug|\+)/)) spec.fifth = 'aug5';
+
+    while (s) {
+      let m;
+      if (eat(/^(maj|Maj|MAJ)(?![a-z])/) || eat(/^M(?=\d)/)) { spec.seventh = 'maj7'; continue; }
+      if ((m = eat(/^sus([24]?)/))) { spec.third = m[1] === '2' ? 'sus2' : 'sus4'; continue; }
+      if ((m = eat(/^add(2|4|6|9|11|13)/))) {
+        const d = parseInt(m[1], 10);
+        if (d === 6) spec.six = true;
+        else alter(d === 2 ? 9 : d === 4 ? 11 : d, 0);
+        continue;
+      }
+      if (eat(/^(6\/9|69)/)) { spec.six = true; alter(9, 0); continue; }
+      if ((m = eat(/^(13|11|9|7|6)/))) {
+        const n = parseInt(m[1], 10);
+        if (n === 6) spec.six = true;
+        else ext = Math.max(ext, n);
+        continue;
+      }
+      if ((m = eat(/^([b#])(5|6|9|11|13)/))) {
+        const off = m[1] === '#' ? 1 : -1;
+        const d = parseInt(m[2], 10);
+        if (d === 5) spec.fifth = off > 0 ? 'aug5' : 'dim5';
+        else if (d === 6) spec.six = true;
+        /* An altered tension asks for itself and for the seventh underneath
+         * it, but not for the tensions in between: ♭III maj7♯11 is a lydian
+         * colour, and throwing in a ninth nobody asked for changes it. */
+        else { alter(d, off); ext = Math.max(ext, 7); }
+        continue;
+      }
+      if ((m = eat(/^(?:no|omit)([35])/))) { spec.drop[m[1]] = true; continue; }
+      return null; // something we do not understand — say so rather than guess
+    }
+
+    /* A numbered extension implies the seventh and the tensions below it —
+     * with one exception every player knows: a 13th chord leaves out the 11th,
+     * because a natural 11 sits a semitone above a major third. */
+    if (ext >= 7) {
+      if (!spec.seventh) spec.seventh = sawDim ? 'dim7' : 'min7';
+      if (ext >= 9) alterIfAbsent(spec, 9);
+      if (ext === 11) alterIfAbsent(spec, 11);
+      if (ext >= 13) alterIfAbsent(spec, 13);
+    } else if (spec.seventh && ext === 0 && !spec.six) {
+      // "Cmaj" on its own is a plain triad; "Cmaj7" reaches here with ext 7.
+      spec.seventh = null;
+    }
+    if (sawDim && spec.seventh === 'min7' && ext === 7) spec.seventh = 'dim7';
+    return spec;
+  }
+
+  function alterIfAbsent(spec, degree) {
+    if (!spec.tensions.some((tn) => tn.degree === degree)) spec.tensions.push({ degree, offset: 0 });
+  }
+
+  const TENSION_TONE = { 9: 'nine', 11: 'eleven', 13: 'thirteen' };
+
+  /* Build a chord from a root, the text after it, and an optional slash bass.
+   * Returns null when the body is not readable as a chord. */
+  function typedChord(root, body, bass) {
+    const ascii = String(body || '').replace(/♯/g, '#').replace(/♭/g, 'b');
+    const spec = scanChordBody(ascii);
+    if (!spec) return null;
+
+    const at = (tone, extra = 0) => step(root, CHORD_TONES[tone][0], CHORD_TONES[tone][1] + extra);
+    const notes = [root];
+    const third = spec.drop['3'] && spec.third !== 'sus2' && spec.third !== 'sus4' ? null : at(spec.third);
+    const fifth = spec.drop['5'] ? null : at(spec.fifth);
+    if (third) notes.push(third);
+    if (fifth) notes.push(fifth);
+    if (spec.six) notes.push(at('six'));
+    if (spec.seventh) notes.push(at(spec.seventh));
+    spec.tensions
+      .slice()
+      .sort((a, b) => a.degree - b.degree)
+      .forEach((tn) => notes.push(at(TENSION_TONE[tn.degree], tn.offset)));
+
+    // The triad quality still drives the numeral and the number suffix, so a
+    // sus chord borrows the major casing it is usually written with.
+    const i3 = third ? mod12(absv(third) - absv(root)) : 4;
+    const i5 = fifth ? mod12(absv(fifth) - absv(root)) : 7;
+    const quality = triadQuality(i3, i5);
+    const sev = spec.seventh
+      ? seventhQuality(quality, mod12(absv(at(spec.seventh)) - absv(root)))
+      : null;
+
+    /* The root is respelled for display, so the rest of the symbol is tidied to
+     * match. Case is left alone on a bare m or M, where it is the whole
+     * difference between a minor chord and a major seventh. */
+    const pretty = String(body || '')
+      .replace(/#/g, SHARP)
+      .replace(/b(?=\d)/g, FLAT)
+      .replace(/(MAJ|Maj)(?![a-z])/g, 'maj')
+      .replace(/(MIN|Min)(?![a-z])/g, 'min')
+      .replace(/DIM|Dim/g, 'dim')
+      .replace(/AUG|Aug/g, 'aug')
+      .replace(/SUS|Sus/g, 'sus')
+      .replace(/ADD|Add/g, 'add');
+    const name = noteName(root) + pretty + (bass ? '/' + noteName(bass) : '');
+
+    return {
+      root,
+      bass: bass || null,
+      notes,
+      triadNotes: [root, third || at('maj3'), fifth || at('per5')],
+      seventhNote: spec.seventh ? at(spec.seventh) : null,
+      quality,
+      seventhQuality: sev,
+      isMajorish: quality === 'maj' || quality === 'aug',
+      typedBody: pretty,
+      symbol: name,
+      symbol7: name,
+      display: name
+    };
+  }
+
+  /* Read a whole chord symbol, root and all. */
+  function parseChordSymbol(text) {
+    if (typeof text !== 'string') return null;
+    let s = text.trim()
+      .replace(/\s+/g, '')
+      .replace(/[Δ∆]/g, 'maj')
+      .replace(/[°º]/g, 'dim')
+      .replace(/ø/g, 'm7b5')
+      .replace(/[–—]/g, '-');
+    if (!s) return null;
+
+    let bass = null;
+    const slash = s.indexOf('/');
+    // "6/9" is a chord quality, not a slash bass.
+    if (slash >= 0 && !/^6\/9/.test(s.slice(slash - 1))) {
+      const tail = s.slice(slash + 1);
+      if (!/^[A-Ga-g][#b♯♭]*$/.test(tail)) return null;
+      bass = parseNote(tail);
+      s = s.slice(0, slash);
+    }
+
+    const rootText = /^[A-Ga-g][#b♯♭]*/.exec(s);
+    if (!rootText) return null;
+    const root = parseNote(rootText[0]);
+    return typedChord(root, s.slice(rootText[0].length), bass);
+  }
+
   // ------------------------------------------------------- roman numerals ---
+
+  /* Where a note sits in a reference scale: its degree, and the accidental
+   * prefix that says how far it is from the scale's own version of it. */
+  function degreeOf(note, refScale) {
+    const deg = (((note.letter - refScale[0].letter) % 7) + 7) % 7;
+    let diff = mod12(pc(note) - pc(refScale[deg]));
+    if (diff > 6) diff -= 12;
+    return { deg, prefix: diff < 0 ? FLAT.repeat(-diff) : diff > 0 ? SHARP.repeat(diff) : '' };
+  }
 
   /* Roman numeral for a chord, measured against a reference scale. Chords that
    * sit outside the scale pick up a flat/sharp prefix (bVI, #iv...). */
   function romanFor(chord, refScale, opts = {}) {
-    const tonicLetter = refScale[0].letter;
-    const deg = (((chord.root.letter - tonicLetter) % 7) + 7) % 7;
-    let diff = mod12(pc(chord.root) - pc(refScale[deg]));
-    if (diff > 6) diff -= 12;
-    const prefix = diff < 0 ? FLAT.repeat(-diff) : diff > 0 ? SHARP.repeat(diff) : '';
+    const { deg, prefix } = degreeOf(chord.root, refScale);
     let numeral = TRIADS[chord.quality].roman(ROMAN[deg]);
     if (opts.seventh && chord.seventhQuality) {
       const suffix = SEVENTHS[chord.seventhQuality].romanSuffix;
@@ -176,6 +372,11 @@ const Theory = (() => {
       if (suffix === 'ø7') numeral = numeral.replace('°', '') + 'ø7';
       else if (suffix === '°7') numeral = numeral + '7';
       else numeral = numeral + suffix;
+    }
+    // A slash chord names both ends in the same system: I/V, not I/G.
+    if (chord.bass && pc(chord.bass) !== pc(chord.root)) {
+      const b = degreeOf(chord.bass, refScale);
+      numeral += '/' + b.prefix + ROMAN[b.deg];
     }
     return prefix + numeral;
   }
@@ -203,15 +404,16 @@ const Theory = (() => {
   const NUMBER_SUFFIX_TRIAD = { maj: '', min: '-', dim: '-' + FLAT + '5', aug: '+' };
 
   function numberFor(chord, refScale) {
-    const tonicLetter = refScale[0].letter;
-    const deg = (((chord.root.letter - tonicLetter) % 7) + 7) % 7;
-    let diff = mod12(pc(chord.root) - pc(refScale[deg]));
-    if (diff > 6) diff -= 12;
-    const prefix = diff < 0 ? FLAT.repeat(-diff) : diff > 0 ? SHARP.repeat(diff) : '';
+    const { deg, prefix } = degreeOf(chord.root, refScale);
     const suffix = chord.seventhQuality
       ? NUMBER_SUFFIX[chord.seventhQuality]
       : NUMBER_SUFFIX_TRIAD[chord.quality];
-    return prefix + (deg + 1) + suffix;
+    let out = prefix + (deg + 1) + suffix;
+    if (chord.bass && pc(chord.bass) !== pc(chord.root)) {
+      const b = degreeOf(chord.bass, refScale);
+      out += '/' + b.prefix + (b.deg + 1);
+    }
+    return out;
   }
 
   // ------------------------------------------------------------ functions ---
@@ -728,9 +930,46 @@ const Theory = (() => {
     });
   }
 
+  /* The distance from one note to another as a letter step plus a semitone
+   * step — the exact pair step() needs to walk back, so the spelling survives
+   * the round trip. */
+  function intervalBetween(from, to) {
+    const deg = (((to.letter - from.letter) % 7) + 7) % 7;
+    const li = from.letter + deg;
+    const base = LETTER_SEMI[((li % 7) + 7) % 7] + 12 * Math.floor(li / 7);
+    return { deg, semis: to.acc + base - absv(from) };
+  }
+
+  /* A typed chord is stored as its distance from the tonic rather than as a
+   * chord, for the same reason a grid chord is stored as a grid position: the
+   * progression then transposes with the key instead of being stranded in
+   * whichever key it was typed in. */
+  function typedSlot(key, chord) {
+    const root = intervalBetween(key.tonic, chord.root);
+    const slot = { row: 'typed', deg: root.deg, semis: root.semis, body: chord.typedBody };
+    if (chord.bass) {
+      const b = intervalBetween(key.tonic, chord.bass);
+      slot.bassDeg = b.deg;
+      slot.bassSemis = b.semis;
+    }
+    return slot;
+  }
+
+  function typedChordAt(key, slot) {
+    const root = step(key.tonic, slot.deg, slot.semis);
+    const bass = slot.bassDeg === undefined ? null : step(key.tonic, slot.bassDeg, slot.bassSemis);
+    const chord = typedChord(root, slot.body, bass);
+    if (!chord) return null;
+    chord.roman = romanFor(chord, key.scaleNotes);
+    chord.roman7 = chord.roman;
+    chord.number = numberFor(chord, key.scaleNotes);
+    return chord;
+  }
+
   /* Resolve a saved progression slot back to a chord in the current key, which
    * is what lets a progression transpose when the key changes. */
   function songChordAt(key, slot) {
+    if (slot.row === 'typed') return typedChordAt(key, slot);
     const col = songLayout(key)[slot.pos];
     if (!col) return null;
     return col[slot.row] || null;
@@ -749,6 +988,11 @@ const Theory = (() => {
       out.push(m);
     });
     out.push(rootMidi + 12);
+    /* A slash chord is the same chord with someone else underneath, so the
+     * bass goes below everything rather than into the stack. */
+    if (chord.bass && pc(chord.bass) !== rootPc) {
+      out.unshift(12 * baseOctave + pc(chord.bass));
+    }
     return out;
   }
 
@@ -776,6 +1020,7 @@ const Theory = (() => {
     nt, noteName, parseNote, pc, step, scale, buildKey, chordOn, chordFromScale,
     romanFor, numberFor, secondaryDominants, secondaryFor, borrowedChords,
     relativePivots, relativeRoutes, chordContext, progressions, voice, midiOf,
-    stripSeventh, keySignature, songLayout, songChordAt, SONG_ORDER
+    stripSeventh, keySignature, songLayout, songChordAt, SONG_ORDER,
+    parseChordSymbol, typedChord, typedSlot, intervalBetween
   };
 })();
